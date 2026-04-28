@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects>$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>{6508A8C6-23F8-4782-AD67-D7D25DCFEC96}</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>Ops.Plugins.Model</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)CrmServiceContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)EntityOptionSetEnum.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\opportunity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\budgetstatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\initialcommunication.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\msdyn_opportunitygradeoptset.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\msdyn_opportunityscoretrendoptset.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\need.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\opportunity_salesstage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\purchaseprocess.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\purchasetimeframe.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\qooi_pricingerrorcode.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\qooi_skippricecalculation.cs" />
+  </ItemGroup>
+</Project>
