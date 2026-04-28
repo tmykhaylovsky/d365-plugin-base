@@ -1,0 +1,64 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build output
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+x64/
+x86/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+packages/
+!**/packages/build/
+
+# Test output
+TestResults/
+[Cc]overage/
+*.coverage
+*.coveragexml
+
+# Publish output
+publish/
+PublishOutput/
+
+# ReSharper
+_ReSharper*/
+*.DotSettings.user
+.idea/
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Mac
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Signing keys — never commit these to source control
+*.snk
+*.pfx
+
+# PAC CLI auth profiles — contain tokens, never commit
+authprofile.json
