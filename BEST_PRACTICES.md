@@ -5,7 +5,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 ## Authoring plugins
 
 - Keep plugin classes stateless. Dataverse can cache and reuse `IPlugin` instances, so do not store services, execution context, target records, or other invocation data in instance fields.
-- Declare the expected runtime shape in `GetRegisteredEvents()`: message, primary entity, pipeline stage, execution mode, handler, and required image aliases.
+- Declare the expected runtime and deployment shape in `GetRegisteredEvents()`: message, primary entity, pipeline stage, execution mode, handler, filtering attributes, required image aliases, and image attributes.
 - Point each registered event at a concise step-oriented handler name, such as `OppPostOpUpdateSync`.
 - Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` instead of raw strings for standard Dataverse values.
 - Use generated early-bound model types from `Ops.Plugins.Model` whenever available. Prefer `Opportunity.EntityLogicalName`, `Opportunity.Fields.*`, and generated option-set enums over raw logical names or integer option values.
@@ -16,6 +16,9 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 - Register `Update` steps with filtering attributes whenever possible. Do not include the primary key as a filtering attribute.
 - Register only the image aliases and image columns the handler actually needs. Prefer images over retrieves when comparing before and after values.
+- Keep `RegisteredEvent` filtering and image attribute metadata aligned with the real step registration so tests and deployment automation have one source of intent.
+- Treat missing filtering attributes and missing image columns as deployment-time validation concerns. Runtime plugin code can trace likely registration issues, but it cannot directly read the Dataverse step registration.
+- Use runtime registration diagnostics as hints: a fired `Update` Target with none of the expected filtering attributes suggests an over-broad step, while an image missing an expected attribute may mean either image misconfiguration or a selected column whose value is null.
 - Choose stage intentionally:
   - Use `PreValidation` for checks that can cancel before the main transaction when security and transaction semantics fit.
   - Use `PreOperation` to modify fields on the target entity before Dataverse writes it.
@@ -60,6 +63,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - `Ops.Plugins.Shared` and `Ops.Plugins.Model` are shared projects, not deployable DLLs. Their `.projitems` files control what compiles into `Ops.Plugins.dll`.
 - Add shared infrastructure only when it is broadly useful across plugins. Keep client-specific business logic in `Ops.Plugins`.
 - Keep helper APIs conservative: no hidden all-column retrieves, no hidden bulk reads without limits, and no surprise writes.
+- Keep C# plugin helper calls compact when readable. Short method calls and LINQ chains can stay on one line; wrap only when the line becomes hard to scan.
 
 ## Testing
 
@@ -74,6 +78,8 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Build and test sequentially on Windows to avoid file locks in `obj` and `bin`.
 - Keep the signing-key decision explicit. The committed `.snk` is convenient for starter/dev/test assembly identity, but production environments may require an organization-controlled private key.
 - `pac plugin push` updates the assembly binary. Step registration details such as stage, mode, filtering attributes, and images remain managed separately unless you automate that process.
+- Step registration automation should be additive by default: create missing `sdkmessageprocessingstep` and image rows for the assembly being deployed, but do not rewrite existing steps unless an explicit update mode is requested.
+- A lightweight registration sync tool should run in dry-run mode by default, show creates/updates/deletes before applying, and support explicit `-Apply` behavior for correcting filtering attributes and image definitions after `pac plugin push`.
 - Rename namespaces only after the starter builds and tests cleanly.
 
 ## Microsoft references

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xrm.Sdk;
 
 namespace Ops.Plugins.Shared
@@ -12,7 +14,10 @@ namespace Ops.Plugins.Shared
             string entityLogicalName,
             Action<PluginBase.LocalPluginContext> execute = null,
             string requiredPreImageName = null,
-            string requiredPostImageName = null)
+            string requiredPostImageName = null,
+            IEnumerable<string> filteringAttributes = null,
+            IEnumerable<string> preImageAttributes = null,
+            IEnumerable<string> postImageAttributes = null)
         {
             Stage = stage;
             Mode = mode;
@@ -21,6 +26,9 @@ namespace Ops.Plugins.Shared
             Execute = execute;
             RequiredPreImageName = requiredPreImageName;
             RequiredPostImageName = requiredPostImageName;
+            FilteringAttributes = NormalizeAttributes(filteringAttributes);
+            PreImageAttributes = NormalizeAttributes(preImageAttributes);
+            PostImageAttributes = NormalizeAttributes(postImageAttributes);
         }
 
         public PluginBase.PluginStage Stage { get; }
@@ -30,6 +38,9 @@ namespace Ops.Plugins.Shared
         public Action<PluginBase.LocalPluginContext> Execute { get; }
         public string RequiredPreImageName { get; }
         public string RequiredPostImageName { get; }
+        public IReadOnlyCollection<string> FilteringAttributes { get; }
+        public IReadOnlyCollection<string> PreImageAttributes { get; }
+        public IReadOnlyCollection<string> PostImageAttributes { get; }
 
         public bool Matches(IPluginExecutionContext context)
         {
@@ -51,6 +62,17 @@ namespace Ops.Plugins.Shared
         {
             return string.IsNullOrWhiteSpace(RequiredPostImageName)
                 || context?.PostEntityImages?.ContainsKey(RequiredPostImageName) == true;
+        }
+
+        private static IReadOnlyCollection<string> NormalizeAttributes(IEnumerable<string> attributes)
+        {
+            if (attributes == null) return Array.Empty<string>();
+
+            return attributes
+                .Where(a => !string.IsNullOrWhiteSpace(a))
+                .Select(a => a.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
         }
     }
 }

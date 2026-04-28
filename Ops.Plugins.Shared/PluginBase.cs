@@ -60,6 +60,8 @@ namespace Ops.Plugins.Shared
                     return;
                 }
 
+                TraceRegistrationDiagnostics(context, registeredEvent);
+
                 if (registeredEvent?.Execute != null)
                     registeredEvent.Execute(context);
                 else
@@ -90,6 +92,57 @@ namespace Ops.Plugins.Shared
         {
             return Enumerable.Empty<RegisteredEvent>();
         }
+
+        private static void TraceRegistrationDiagnostics(LocalPluginContext context, RegisteredEvent registeredEvent)
+        {
+            if (context == null || registeredEvent == null) return;
+
+            TraceFilteringAttributeDiagnostics(context, registeredEvent);
+            TraceImageAttributeDiagnostics(context, PluginImageNames.PreImage, registeredEvent.RequiredPreImageName, registeredEvent.PreImageAttributes, context.ExecutionContext.PreEntityImages);
+            TraceImageAttributeDiagnostics(context, PluginImageNames.PostImage, registeredEvent.RequiredPostImageName, registeredEvent.PostImageAttributes, context.ExecutionContext.PostEntityImages);
+        }
+
+        private static void TraceFilteringAttributeDiagnostics(LocalPluginContext context, RegisteredEvent registeredEvent)
+        {
+            if (!context.IsMessage(Messages.Update) || !registeredEvent.FilteringAttributes.Any()) return;
+
+            var target = context.GetTarget();
+            if (target == null) return;
+
+            var missingAttributes = GetMissingAttributes(registeredEvent.FilteringAttributes, target.Attributes, requireAllExpectedAttributes: false);
+            if (!missingAttributes.Any()) return;
+
+            context.Trace(
+                $"Registered event expected Update filtering attributes [{FormatList(missingAttributes)}], but Target did not contain any of them. Confirm the step filtering attributes include these logical names if this event should only run for targeted changes.",
+                TraceLevel.Info);
+        }
+
+        private static void TraceImageAttributeDiagnostics(LocalPluginContext context, string imageLabel, string imageName, IReadOnlyCollection<string> expectedAttributes, EntityImageCollection images)
+        {
+            if (string.IsNullOrWhiteSpace(imageName) || expectedAttributes == null || !expectedAttributes.Any()) return;
+            if (images == null || !images.TryGetValue(imageName, out var image) || image == null) return;
+
+            var missingAttributes = GetMissingAttributes(expectedAttributes, image.Attributes, requireAllExpectedAttributes: true);
+            if (!missingAttributes.Any()) return;
+
+            context.Trace(
+                $"Registered event {imageLabel} '{imageName}' did not contain expected attributes [{FormatList(missingAttributes)}]. They may be missing from the step image configuration, or selected but absent because the Dataverse value is null.",
+                TraceLevel.Verbose);
+        }
+
+        private static IReadOnlyCollection<string> GetMissingAttributes(IReadOnlyCollection<string> expectedAttributes, AttributeCollection actualAttributes, bool requireAllExpectedAttributes)
+        {
+            if (expectedAttributes == null || !expectedAttributes.Any()) return Array.Empty<string>();
+            if (actualAttributes == null) return expectedAttributes.ToArray();
+
+            var missingAttributes = expectedAttributes.Where(a => !actualAttributes.ContainsKey(a)).ToArray();
+
+            if (requireAllExpectedAttributes) return missingAttributes;
+            return missingAttributes.Length == expectedAttributes.Count ? expectedAttributes.ToArray() : Array.Empty<string>();
+        }
+
+        private static string FormatList(IEnumerable<string> values) =>
+            string.Join(", ", values ?? Enumerable.Empty<string>());
 
         public sealed class LocalPluginContext
         {

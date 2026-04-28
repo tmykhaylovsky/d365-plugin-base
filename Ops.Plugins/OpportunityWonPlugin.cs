@@ -39,7 +39,9 @@ namespace Ops.Plugins
                 Messages.Update,
                 Opportunity.EntityLogicalName,
                 OppPostOpUpdateSync,
-                requiredPreImageName: PluginImageNames.PreImage);
+                requiredPreImageName: PluginImageNames.PreImage,
+                filteringAttributes: new[] { Opportunity.Fields.StatusCode },
+                preImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate });
         }
 
         private void OppPostOpUpdateSync(LocalPluginContext context)

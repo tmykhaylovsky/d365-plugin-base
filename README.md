@@ -22,6 +22,10 @@ dotnet build Ops.Plugins.slnx -c Debug
 dotnet test Ops.Plugins.slnx
 ```
 
+## Power Platform CLI Prerequisites
+
+See [`PAC_CLI.md`](PAC_CLI.md) for the concise command reference covering `pac auth`, `pac plugin push`, and `pac modelbuilder build`.
+
 ## Windows Command Notes
 
 These notes reflect the local Windows validation path for this repo:
@@ -58,20 +62,20 @@ Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
 
 See [`BEST_PRACTICES.md`](BEST_PRACTICES.md) for plugin authoring, registration, testing, shared project, model regeneration, logging, and deployment conventions.
 
-## Registering The Plugin DLL
+## Deploying The Plugin DLL
 
-Initial registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll`, then create plugin steps for concrete plugin classes such as `Ops.Plugins.OpportunityWonPlugin`.
+Initial registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll`, then create plugin steps for concrete plugin classes such as `Ops.Plugins.OpportunityWonPlugin`. After that, use `pac plugin push` to update the existing assembly binary. See [`PAC_CLI.md`](PAC_CLI.md) for the exact command.
 
-Example update of an existing registered assembly:
+## Automating Step Registration
 
-```powershell
-pac plugin push `
-  --pluginId <pluginassembly-guid> `
-  --pluginFile Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
-  --type Assembly
-```
+Yes, step registration can be automated for assemblies that are already in Dataverse. The safe pattern is:
 
-`pac plugin push` updates the assembly binary. Step registration details such as message, entity, stage, filtering attributes, images, and unsecure config remain managed separately.
+1. Build and push the signed assembly with `pac plugin push`.
+2. Query Dataverse for the target `pluginassembly` and its `plugintype` rows.
+3. For each plugin class, compare the code-declared `RegisteredEvent` metadata with existing `sdkmessageprocessingstep` rows.
+4. Create only missing steps and images; avoid silently changing existing managed or manually tuned steps unless the script has an explicit update mode.
+
+`RegisteredEvent` includes deployment metadata for this: message, entity, stage, mode, filtering attributes, required image names, and image attributes. The starter plugin uses that metadata for `OpportunityWonPlugin`.
 
 ## Included Starter Plugin
 
@@ -81,15 +85,7 @@ When the opportunity moves to Won, it stamps `actualclosedate` if that field was
 
 ## Early-Bound Model Regeneration
 
-Generation settings live in `Ops.Plugins.Model/builderSettings.json`.
-
-```powershell
-pac modelbuilder build `
-  --settingsTemplateFile Ops.Plugins.Model/builderSettings.json `
-  --outdirectory Ops.Plugins.Model
-```
-
-After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` if new entity, option set, or message files are added.
+Generation settings live in `Ops.Plugins.Model/builderSettings.json`. See [`PAC_CLI.md`](PAC_CLI.md) for the `pac modelbuilder build` command. After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` if new entity, option set, or message files are added.
 
 ## Signing
 

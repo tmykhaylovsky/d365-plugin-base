@@ -2,32 +2,15 @@
 
 This is a [Shared Project](https://learn.microsoft.com/en-us/xamarin/cross-platform/app-fundamentals/shared-projects) (`Ops.Plugins.Model.shproj`). It contains no assembly of its own — consuming projects import `Ops.Plugins.Model.projitems` and the source files are compiled directly into them.
 
-Model generation and early-bound usage conventions are documented in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md).
+Model generation commands are in [`../PAC_CLI.md`](../PAC_CLI.md). Early-bound usage conventions are documented in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md).
 
 ## Prerequisites
 
-Install the Power Platform CLI as a .NET global tool if you haven't already:
-
-```bash
-dotnet tool install --global Microsoft.PowerApps.CLI.Tool
-```
-
-Authenticate against your target environment:
-
-```bash
-pac auth create --url https://<your-org>.crm.dynamics.com
-pac auth select --index <n>   # use `pac auth list` to find the right index
-```
+Install PAC CLI and select the target environment using [`../PAC_CLI.md`](../PAC_CLI.md).
 
 ## Regenerating classes
 
-All generation settings are captured in [`builderSettings.json`](builderSettings.json). Run from the repo root:
-
-```bash
-~/.dotnet/tools/pac modelbuilder build \
-  --settingsTemplateFile Ops.Plugins.Model/builderSettings.json \
-  --outdirectory Ops.Plugins.Model
-```
+All generation settings are captured in [`builderSettings.json`](builderSettings.json). Run the `pac modelbuilder build` command from [`../PAC_CLI.md`](../PAC_CLI.md).
 
 The tool overwrites all files it manages (`Entities/`, `OptionSets/`, `CrmServiceContext.cs`, `EntityOptionSetEnum.cs`). After running, sync `Ops.Plugins.Model.projitems` with any files that were added or removed (see below).
 
