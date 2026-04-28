@@ -2,7 +2,6 @@ using System;
 using Microsoft.Xrm.Sdk.Query;
 using Ops.Plugins;
 using Ops.Plugins.Model;
-using Ops.Plugins.Shared;
 using Xunit;
 
 // Tests for OpportunityWonPlugin.
@@ -54,10 +53,9 @@ namespace Ops.Plugins.Testing
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 
             // Assert - opportunity in the in-memory store should now have actualclosedate
-            var updated = Service.Retrieve(Opportunity.EntityLogicalName, OpportunityId,
-                new ColumnSet(Opportunity.Fields.ActualCloseDate));
+            var updated = RetrieveOpportunity();
 
-            Assert.True(updated.HasValue(Opportunity.Fields.ActualCloseDate),
+            Assert.True(updated.ActualCloseDate.HasValue,
                 "actualclosedate should have been stamped when Opportunity moved to Won");
         }
 
@@ -76,8 +74,7 @@ namespace Ops.Plugins.Testing
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 
             // Assert - close date on the seeded record should be unchanged
-            var record = Service.Retrieve(Opportunity.EntityLogicalName, OpportunityId,
-                new ColumnSet(Opportunity.Fields.ActualCloseDate)).ToEntity<Opportunity>();
+            var record = RetrieveOpportunity();
 
             Assert.Equal(existingClose, record.ActualCloseDate);
         }
@@ -119,5 +116,9 @@ namespace Ops.Plugins.Testing
 
             Assert.Null(exception);
         }
+
+        private Opportunity RetrieveOpportunity() =>
+            Service.Retrieve(Opportunity.EntityLogicalName, OpportunityId,
+                new ColumnSet(Opportunity.Fields.ActualCloseDate)).ToEntity<Opportunity>();
     }
 }

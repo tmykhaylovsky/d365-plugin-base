@@ -254,20 +254,40 @@ namespace Ops.Plugins.Shared
     // -------------------------------------------------------------------------
     public static class LocalPluginContextExtensions
     {
+        public static void Trace(
+            this PluginBase.LocalPluginContext context,
+            string message,
+            TraceLevel? level = null)
+        {
+            var effectiveLevel = level ?? PluginLogger.GlobalLevel;
+            if (effectiveLevel == TraceLevel.Off) return;
+            context.Logger.Trace(effectiveLevel, message);
+        }
+
+        public static void Trace(
+            this PluginBase.LocalPluginContext context,
+            Func<string> messageFactory,
+            TraceLevel? level = null)
+        {
+            var effectiveLevel = level ?? PluginLogger.GlobalLevel;
+            if (effectiveLevel == TraceLevel.Off) return;
+            context.Logger.Trace(effectiveLevel, messageFactory);
+        }
         // Logs the full target entity at Verbose level — call at the top of ExecutePlugin
         public static void TraceTarget(this PluginBase.LocalPluginContext context) =>
-            context.Logger.Trace(TraceLevel.Verbose, () =>
-                context.GetTarget()?.ToTraceString() ?? "[no target entity]");
+            context.Trace(
+                () => context.GetTarget()?.ToTraceString() ?? "[no target entity]",
+                TraceLevel.Verbose);
 
         // Logs all registered pre-images at Verbose level
         public static void TracePreImages(this PluginBase.LocalPluginContext context) =>
-            context.Logger.Trace(TraceLevel.Verbose, () =>
+            context.Trace(() =>
             {
                 var images = context.ExecutionContext.PreEntityImages;
                 return images.Count == 0
                     ? "[no pre-images]"
                     : string.Join(" | ", images.Select(kvp => $"PreImage[{kvp.Key}]: {kvp.Value.ToTraceString()}"));
-            });
+            }, TraceLevel.Verbose);
     }
 
     // -------------------------------------------------------------------------
