@@ -13,6 +13,34 @@ pac auth select --index <n>
 
 Use `pac auth list` before deploys or model regeneration when you work across multiple environments.
 
+PAC stores auth profiles under the current Windows user profile. That is the safest
+way to cache interactive environment access locally; do not copy PAC auth profile
+files into the repo.
+
+For the registration sync tool, prefer either interactive `--environment <url>` or
+a user environment variable containing a connection string:
+
+```powershell
+setx DATAVERSE_CONNECTION_QLAPROD "AuthType=OAuth;Url=https://qlaprod.crm.dynamics.com;LoginPrompt=Auto"
+```
+
+Ignored repo-local notes can live under `.claude/`, but keep only URLs, command
+templates, and environment variable names there. Do not store passwords, client
+secrets, tokens, or literal connection strings in markdown.
+
+For fixed step impersonation, prefer a local alias-to-`systemuserid` map:
+
+```json
+{
+  "Ops Plugin Service": "00000000-0000-0000-0000-000000000000"
+}
+```
+
+Pass it with `--userMap <path>`, or let the tool use the default ignored path
+`.claude/dataverse-registration-users.local.json`. Plugin code should use
+`RegisteredEvent.CallingUser` for the default run-as behavior, or a stable alias
+that resolves to a per-environment `systemuserid`.
+
 ## Build Deployable Assembly
 
 ```powershell
@@ -38,15 +66,26 @@ pac plugin push `
 
 ## Sync Plugin Step Registration
 
-Planned lightweight tooling should run after `pac plugin push`:
+Run the registration sync tool after `pac plugin push`. Dry-run is the default and performs no writes:
 
 ```powershell
 dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `
   --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
-  --pluginAssemblyId <pluginassembly-guid>
+  --pluginAssemblyId <pluginassembly-guid> `
+  --connectionString DATAVERSE_CONNECTION
 ```
 
-Default behavior should be dry-run: inspect `RegisteredEvent` metadata, compare it to Dataverse `sdkmessageprocessingstep` and `sdkmessageprocessingstepimage` rows, then print a concise summary of creates and updates.
+`DATAVERSE_CONNECTION` can be either the literal Dataverse connection string or the name of an environment variable that contains it.
+
+For interactive OAuth, pass the environment URL:
+
+```powershell
+dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `
+  --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
+  --environment https://<your-org>.crm.dynamics.com
+```
+
+The tool inspects `RegisteredEvent` metadata, compares it to Dataverse `sdkmessageprocessingstep` and `sdkmessageprocessingstepimage` rows, then prints a concise summary of creates, updates, extras, warnings, and errors.
 
 Use an explicit apply flag for changes:
 
@@ -54,10 +93,20 @@ Use an explicit apply flag for changes:
 dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `
   --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
   --pluginAssemblyId <pluginassembly-guid> `
+  --connectionString DATAVERSE_CONNECTION `
   --apply
 ```
 
-The tool should create missing steps/images and correct mismatched stage, mode, rank, filtering attributes, image aliases, and image attributes. It should never delete or disable existing steps without a separate explicit flag.
+The tool creates missing steps/images and corrects mismatched rank, filtering attributes, image message property, and image attributes. Existing-step matching uses plug-in type, message, primary entity, stage, and mode. Extra steps/images are reported only; the tool does not delete, disable, enable, change impersonation, or change secure/unsecure configuration.
+
+The tool validates declared entity logical names before apply, creates steps before
+images, and scopes new step creation to the matched plugin assembly. If a matching
+step is disabled, it is treated as an existing step and reported as a warning rather
+than duplicated.
+
+Step metadata can also include an optional description and Run in User's Context.
+Calling User is represented by a null `impersonatinguserid`; fixed users should be
+resolved from `systemuserid` GUIDs rather than display names.
 
 ## Regenerate Early-Bound Model
 
@@ -79,6 +128,5 @@ Current behavior:
 - Runtime tracing reports when a required pre-image or post-image alias is missing.
 - Runtime tracing reports when an `Update` step declares filtering attributes but the fired Target contains none of them. This suggests the step may be registered too broadly.
 - Runtime tracing reports when an existing image does not contain expected image attributes. This is diagnostic only, because absent image attributes and null Dataverse values can look the same to plugin code.
-- Runtime code cannot directly read the Dataverse step registration, so deployment automation is still the right place for authoritative validation.
-
-Future automation can read `RegisteredEvent` metadata and create missing `sdkmessageprocessingstep` and `sdkmessageprocessingstepimage` rows after the assembly is pushed.
+- `Ops.Plugins.Registration` reads the same metadata from the built DLL and can create or update Dataverse registration rows after the assembly is pushed.
+- Runtime code still cannot directly read the Dataverse step registration, so deployment automation remains the authoritative validation point.

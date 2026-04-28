@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ops.Plugins\Ops.Plugins.csproj" />
+    <ProjectReference Include="..\Ops.Plugins.Registration\Ops.Plugins.Registration.csproj" />
   </ItemGroup>
 
 </Project>

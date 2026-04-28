@@ -15,6 +15,8 @@ using Ops.Plugins.Shared;
 //   Execution Mode:       Synchronous
 //   Filtering Attributes: statuscode - critical for performance; omitting this fires on every update
 //   Pre-Image:            Name = "PreImage", Attributes = statuscode, actualclosedate
+//   Post-Image:           Name = "PostImage", Attributes = statuscode, actualclosedate
+//   Run as:               Calling User
 //   Unsecure Config:      (none required for this plugin)
 //
 // Namespace: replace Ops.Plugins with YourClient.Crm.Plugins after cloning
@@ -40,8 +42,12 @@ namespace Ops.Plugins
                 Opportunity.EntityLogicalName,
                 OppPostOpUpdateSync,
                 requiredPreImageName: PluginImageNames.PreImage,
+                requiredPostImageName: PluginImageNames.PostImage,
                 filteringAttributes: new[] { Opportunity.Fields.StatusCode },
-                preImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate });
+                preImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
+                postImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
+                runInUserContext: RegisteredEvent.CallingUser,
+                stepDescription: "Stamps actual close date when an opportunity is won.");
         }
 
         private void OppPostOpUpdateSync(LocalPluginContext context)
@@ -51,10 +57,11 @@ namespace Ops.Plugins
 
             var target   = context.GetTarget()?.ToEntity<Opportunity>();
             var preImage = context.GetPreImage<Opportunity>(); // "PreImage" registered in PRT
+            var postImage = context.GetPostImage<Opportunity>(); // "PostImage" registered in PRT
 
             if (target?.StatusCode != opportunity_statuscode.Won) return;
 
-            context.Trace($"Opportunity Won | {preImage?.StatusCode?.ToString() ?? "null"} -> {target.StatusCode}", TraceLevel.Info);
+            context.Trace($"Opportunity Won | {preImage?.StatusCode?.ToString() ?? "null"} -> {postImage?.StatusCode?.ToString() ?? target.StatusCode.ToString()}", TraceLevel.Info);
 
             // Stamp actual close date only when it was not already set on either target or pre-image
             var alreadySet = target.ActualCloseDate.HasValue || preImage?.ActualCloseDate.HasValue == true;

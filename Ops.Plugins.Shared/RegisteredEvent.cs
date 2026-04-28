@@ -7,6 +7,8 @@ namespace Ops.Plugins.Shared
 {
     public sealed class RegisteredEvent
     {
+        public const string CallingUser = "Calling User";
+
         public RegisteredEvent(
             PluginBase.PluginStage stage,
             SdkMessageProcessingStepMode mode,
@@ -17,7 +19,10 @@ namespace Ops.Plugins.Shared
             string requiredPostImageName = null,
             IEnumerable<string> filteringAttributes = null,
             IEnumerable<string> preImageAttributes = null,
-            IEnumerable<string> postImageAttributes = null)
+            IEnumerable<string> postImageAttributes = null,
+            int rank = 1,
+            string runInUserContext = CallingUser,
+            string stepDescription = null)
         {
             Stage = stage;
             Mode = mode;
@@ -29,6 +34,9 @@ namespace Ops.Plugins.Shared
             FilteringAttributes = NormalizeAttributes(filteringAttributes);
             PreImageAttributes = NormalizeAttributes(preImageAttributes);
             PostImageAttributes = NormalizeAttributes(postImageAttributes);
+            Rank = rank;
+            RunInUserContext = string.IsNullOrWhiteSpace(runInUserContext) ? CallingUser : runInUserContext.Trim();
+            StepDescription = string.IsNullOrWhiteSpace(stepDescription) ? null : stepDescription.Trim();
         }
 
         public PluginBase.PluginStage Stage { get; }
@@ -41,6 +49,9 @@ namespace Ops.Plugins.Shared
         public IReadOnlyCollection<string> FilteringAttributes { get; }
         public IReadOnlyCollection<string> PreImageAttributes { get; }
         public IReadOnlyCollection<string> PostImageAttributes { get; }
+        public int Rank { get; }
+        public string RunInUserContext { get; }
+        public string StepDescription { get; }
 
         public bool Matches(IPluginExecutionContext context)
         {

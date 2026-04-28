@@ -49,7 +49,7 @@ namespace Ops.Plugins.Testing
             var target   = MakeTarget(opportunity_statuscode.Won);
             Seed(preImage);
 
-            var ctx = BuildUpdateContext(target, preImage: preImage);
+            var ctx = BuildUpdateContext(target, preImage: preImage, postImage: target);
 
             // Act
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
@@ -70,7 +70,7 @@ namespace Ops.Plugins.Testing
             var target        = MakeTarget(opportunity_statuscode.Won);
             Seed(preImage);
 
-            var ctx = BuildUpdateContext(target, preImage: preImage);
+            var ctx = BuildUpdateContext(target, preImage: preImage, postImage: target);
 
             // Act - no exception means it ran cleanly; verify no Update SDK call was made
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
@@ -93,7 +93,7 @@ namespace Ops.Plugins.Testing
             var target   = MakeTarget(opportunity_statuscode.InProgress); // no change
             Seed(preImage);
 
-            var ctx = BuildUpdateContext(target, preImage: preImage);
+            var ctx = BuildUpdateContext(target, preImage: preImage, postImage: target);
 
             // Act & Assert - should complete without any SDK calls
             var exception = Record.Exception(() =>
@@ -110,7 +110,7 @@ namespace Ops.Plugins.Testing
             var target   = MakeTarget(opportunity_statuscode.OnHold);
             Seed(preImage);
 
-            var ctx = BuildUpdateContext(target, preImage: preImage);
+            var ctx = BuildUpdateContext(target, preImage: preImage, postImage: target);
 
             // Act & Assert
             var exception = Record.Exception(() =>
@@ -134,7 +134,8 @@ namespace Ops.Plugins.Testing
                 target.LogicalName,
                 target,
                 PluginStage.PostOperation,
-                preImage: existing);
+                preImage: existing,
+                postImage: target);
 
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 
@@ -153,7 +154,8 @@ namespace Ops.Plugins.Testing
                 Opportunity.EntityLogicalName,
                 target,
                 PluginStage.PreOperation,
-                preImage: existing);
+                preImage: existing,
+                postImage: target);
 
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 
@@ -167,7 +169,7 @@ namespace Ops.Plugins.Testing
             var target   = MakeTarget(opportunity_statuscode.Won);
             Seed(existing);
 
-            var ctx = BuildUpdateContext(target, preImage: existing);
+            var ctx = BuildUpdateContext(target, preImage: existing, postImage: target);
             ctx.Mode = 1;
 
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
@@ -182,7 +184,7 @@ namespace Ops.Plugins.Testing
             var target   = MakeTarget(opportunity_statuscode.Won);
             Seed(existing);
 
-            var ctx = BuildUpdateContext(target);
+            var ctx = BuildUpdateContext(target, postImage: target);
 
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 

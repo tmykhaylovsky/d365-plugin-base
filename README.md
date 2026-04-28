@@ -7,6 +7,7 @@ Root-level Visual Studio starter solution for signed Dataverse plugin DLL develo
 ```text
 Ops.Plugins.slnx
 Ops.Plugins/             signed plugin assembly project
+Ops.Plugins.Registration/ console registration sync tool
 Ops.Plugins.Shared/      shared plugin base source imported by the plugin assembly
 Ops.Plugins.Model/       early-bound model shared project imported by the plugin assembly
 Ops.Plugins.Testing/     xUnit/FakeXrmEasy test project
@@ -54,6 +55,7 @@ Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
 | Project | Purpose |
 |---------|---------|
 | `Ops.Plugins` | Deployable `net462` Dataverse plugin class library. Imports shared base and model source, references `Microsoft.CrmSdk.CoreAssemblies`, and signs with `PluginKey.snk`. |
+| `Ops.Plugins.Registration` | Console tool that syncs Dataverse step and image registration from built `RegisteredEvent` metadata after `pac plugin push`. |
 | `Ops.Plugins.Shared` | Visual Studio shared project for `PluginBase`, logging, formatting, extensions, and FetchXML builders. It does not produce a DLL. |
 | `Ops.Plugins.Model` | Visual Studio shared project for early-bound Dataverse model code. It does not produce a DLL. |
 | `Ops.Plugins.Testing` | xUnit test project using FakeXrmEasy. It references only `Ops.Plugins.csproj` among local projects. |
@@ -64,22 +66,33 @@ See [`BEST_PRACTICES.md`](BEST_PRACTICES.md) for plugin authoring, registration,
 
 ## Deploying The Plugin DLL
 
-Initial registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll`, then create plugin steps for concrete plugin classes such as `Ops.Plugins.OpportunityWonPlugin`. After that, use `pac plugin push` to update the existing assembly binary. See [`PAC_CLI.md`](PAC_CLI.md) for the exact command.
+Initial assembly registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll` once so Dataverse has the plugin assembly and plug-in type rows. After that, use `pac plugin push` to update the existing assembly binary, then run `Ops.Plugins.Registration` to dry-run or apply step/image registration from code metadata. See [`PAC_CLI.md`](PAC_CLI.md) for the exact commands.
+
+Local environment access should be cached through PAC auth profiles or user
+environment variables. `.claude/` is ignored and is fine for local URLs and command
+templates, but keep secrets and literal connection strings out of repo files.
+Fixed Run in User's Context values should use a per-environment alias mapped to
+`systemuserid` in an ignored local user map, not a display name.
 
 ## Automating Step Registration
 
-Yes, step registration can be automated for assemblies that are already in Dataverse. The safe pattern is:
+Yes, step registration can be automated for assemblies that are already in Dataverse. The included safe pattern is:
 
 1. Build and push the signed assembly with `pac plugin push`.
 2. Query Dataverse for the target `pluginassembly` and its `plugintype` rows.
 3. For each plugin class, compare the code-declared `RegisteredEvent` metadata with existing `sdkmessageprocessingstep` rows.
-4. Create only missing steps and images; avoid silently changing existing managed or manually tuned steps unless the script has an explicit update mode.
+4. Dry-run by default, then use `--apply` to create missing steps/images and update safe drift fields.
 
-`RegisteredEvent` includes deployment metadata for this: message, entity, stage, mode, filtering attributes, required image names, and image attributes. The starter plugin uses that metadata for `OpportunityWonPlugin`.
+`RegisteredEvent` includes deployment metadata for this: message, entity, stage, mode, rank, filtering attributes, required image names, and image attributes. The starter plugin uses that metadata for `OpportunityWonPlugin`.
+
+Before applying, the sync tool validates declared entity logical names against the
+target environment, creates steps before images, and treats disabled matching steps
+as existing rows so it does not create duplicates.
+It can also sync optional step description and Run in User's Context metadata.
 
 ## Included Starter Plugin
 
-`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at synchronous `PostOperation`, filtered on `statuscode`, with a `PreImage` containing `statuscode` and `actualclosedate`.
+`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at synchronous `PostOperation`, filtered on `statuscode`, with `PreImage` and `PostImage` image records containing `statuscode` and `actualclosedate`.
 
 When the opportunity moves to Won, it stamps `actualclosedate` if that field was not already set.
 

@@ -3,6 +3,7 @@
     <ProjectType TypeId="{D954291E-2A0B-460D-934E-DC6B0785DB48}" Name="Shared Project" Extension=".shproj" IsBuildable="false" />
   </Configurations>
   <Project Path="Ops.Plugins/Ops.Plugins.csproj" />
+  <Project Path="Ops.Plugins.Registration/Ops.Plugins.Registration.csproj" />
   <Project Path="Ops.Plugins.Model/Ops.Plugins.Model.shproj" />
   <Project Path="Ops.Plugins.Shared/Ops.Plugins.Shared.shproj" />
   <Project Path="Ops.Plugins.Testing/Ops.Plugins.Testing.csproj" />
