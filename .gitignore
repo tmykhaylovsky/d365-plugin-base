@@ -59,7 +59,7 @@ Desktop.ini
 .Spotlight-V100
 .Trashes
 
-# Signing keys — never commit these to source control
+# Signing keys - never commit these to source control
 *.snk
 *.pfx
 
