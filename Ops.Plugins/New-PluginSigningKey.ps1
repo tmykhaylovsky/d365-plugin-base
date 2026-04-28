@@ -37,10 +37,11 @@ Install the .NET Framework SDK component for Visual Studio, or run this from a V
   sn -k "$targetPath"
 
 The generated .snk file is intentionally ignored by git. Replace it with your organization's key if you have one.
+The key is a passwordless strong-name key pair; do not use a password-protected signing file for this project.
 "@
 }
 
-Write-Host "Creating local strong-name key: $targetPath"
+Write-Host "Creating local passwordless strong-name key: $targetPath"
 & $sn.FullName -k $targetPath
 
 if ($LASTEXITCODE -ne 0) {

@@ -91,12 +91,20 @@ After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` if ne
 
 `Ops.Plugins/PluginKey.snk` is used by `Ops.Plugins.csproj` via `SignAssembly` and `AssemblyOriginatorKeyFile`. The key is intentionally ignored by git, so a fresh clone will not have it.
 
-On Windows, the first Visual Studio or MSBuild build creates a local `PluginKey.snk` automatically by running `Ops.Plugins/New-PluginSigningKey.ps1`, which uses the Windows SDK `sn.exe` tool. Replace the generated key with your organization's key if you have a standard signing process.
+On Windows, the first Visual Studio or MSBuild build creates a local `PluginKey.snk` automatically by running `Ops.Plugins/New-PluginSigningKey.ps1`, which uses the Windows SDK `sn.exe` tool. The generated `.snk` is a passwordless strong-name key pair. Replace the generated key with your organization's key if you have a standard signing process.
+
+You can also create the key explicitly after changing into the plugin project folder:
+
+```powershell
+cd Ops.Plugins
+.\New-PluginSigningKey.ps1 -Path .\PluginKey.snk
+```
 
 If key creation fails, install the .NET Framework SDK component for Visual Studio, or run this from a Visual Studio Developer PowerShell:
 
 ```powershell
-sn -k Ops.Plugins/PluginKey.snk
+cd Ops.Plugins
+sn -k PluginKey.snk
 ```
 
 ## Notes For Customization
