@@ -19,7 +19,7 @@ namespace Ops.Plugins.Testing.Registration
             var preImage = step.Images.Single(i => i.Alias == PluginImageNames.PreImage);
             var postImage = step.Images.Single(i => i.Alias == PluginImageNames.PostImage);
 
-            Assert.Equal("Ops.Plugins", registration.AssemblyName);
+            Assert.Equal(typeof(OpportunityWonPlugin).Assembly.GetName().Name, registration.AssemblyName);
             Assert.Equal(Messages.Update, step.MessageName);
             Assert.Equal(Opportunity.EntityLogicalName, step.EntityLogicalName);
             Assert.Equal((int)PluginBase.PluginStage.PostOperation, step.Stage);
@@ -29,9 +29,14 @@ namespace Ops.Plugins.Testing.Registration
             Assert.Equal("Stamps actual close date when an opportunity is won.", step.Description);
             Assert.Equal(Opportunity.Fields.StatusCode, step.FilteringAttributes.ToString());
             Assert.Equal(0, preImage.ImageType);
-            Assert.Equal("actualclosedate,statuscode", preImage.Attributes.ToString());
+            Assert.Equal(ExpectedImageAttributes(), preImage.Attributes.ToString());
             Assert.Equal(1, postImage.ImageType);
-            Assert.Equal("actualclosedate,statuscode", postImage.Attributes.ToString());
+            Assert.Equal(ExpectedImageAttributes(), postImage.Attributes.ToString());
+        }
+
+        private static string ExpectedImageAttributes()
+        {
+            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate }).ToString();
         }
     }
 }

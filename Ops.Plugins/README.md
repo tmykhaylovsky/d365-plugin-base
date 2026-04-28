@@ -49,7 +49,7 @@ This project imports source from `Ops.Plugins.Shared` and `Ops.Plugins.Model` th
 The canonical guidance lives in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md). Keep this checklist aligned with that file.
 
 - Declare expected runtime shape in `GetRegisteredEvents()` for each plugin: message, primary entity, stage, execution mode, and any required image name.
-- Include deployment metadata in each `RegisteredEvent`: filtering attributes plus pre-image and post-image attribute lists when the step needs them.
+- Include deployment metadata in each `RegisteredEvent`: filtering attributes, pre-image and post-image attribute lists, optional description, and Run in User's Context when the step needs them.
 - Point each registered event at a meaningfully named handler such as `OppPostOpUpdateSync`; avoid using generic handler names for business logic.
 - Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` for standard Dataverse message names, execution modes, and image aliases.
 - Use generated early-bound model constants such as `Opportunity.EntityLogicalName` and `Opportunity.Fields.*` instead of raw logical-name strings whenever the entity is in `Ops.Plugins.Model`.

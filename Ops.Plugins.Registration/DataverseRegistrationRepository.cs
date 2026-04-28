@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.ServiceModel;
 using Microsoft.PowerPlatform.Dataverse.Client;
 using Microsoft.Xrm.Sdk;
@@ -68,6 +71,17 @@ namespace Ops.Plugins.Registration
 
                 change.Applied = true;
             }
+        }
+
+        public virtual void PushAssembly(Guid pluginAssemblyId, string assemblyPath)
+        {
+            var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
+            var update = new Entity("pluginassembly", pluginAssemblyId);
+            update["content"] = Convert.ToBase64String(File.ReadAllBytes(assemblyPath));
+            update["version"] = assemblyName.Version?.ToString();
+            update["publickeytoken"] = PublicKeyTokenToString(assemblyName.GetPublicKeyToken());
+            update["culture"] = string.IsNullOrWhiteSpace(assemblyName.CultureName) ? "neutral" : assemblyName.CultureName;
+            _service.Update(update);
         }
 
         private ActualPluginAssembly FindAssembly(DesiredRegistration desired, RegistrationOptions options)
@@ -311,6 +325,12 @@ namespace Ops.Plugins.Registration
             if (_optionsUserAliases != null && _optionsUserAliases.TryGetValue(value, out id)) return id;
 
             throw new InvalidOperationException($"Run in User's Context '{value}' was not found. Use 'Calling User', a systemuserid GUID, or an alias in --userMap.");
+        }
+
+        private static string PublicKeyTokenToString(byte[] token)
+        {
+            if (token == null || token.Length == 0) return null;
+            return string.Concat(token.Select(b => b.ToString("x2", CultureInfo.InvariantCulture)));
         }
 
         private Guid FindStepId(string key)

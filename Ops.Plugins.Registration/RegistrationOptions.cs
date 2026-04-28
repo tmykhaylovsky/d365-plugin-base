@@ -13,6 +13,7 @@ namespace Ops.Plugins.Registration
         public string EnvironmentUrl { get; set; }
         public string ConnectionString { get; set; }
         public bool Apply { get; set; }
+        public bool PushAssembly { get; set; }
         public bool IncludeDisabled { get; set; }
         public bool Verbose { get; set; }
         public bool Help { get; set; }
@@ -48,6 +49,9 @@ namespace Ops.Plugins.Registration
                         break;
                     case "--apply":
                         options.Apply = true;
+                        break;
+                    case "--pushAssembly":
+                        options.PushAssembly = true;
                         break;
                     case "--includeDisabled":
                         options.IncludeDisabled = true;
@@ -111,9 +115,7 @@ namespace Ops.Plugins.Registration
 
         private void LoadUserAliases()
         {
-            var path = string.IsNullOrWhiteSpace(UserMapPath)
-                ? Path.Combine(".claude", "dataverse-registration-users.local.json")
-                : UserMapPath;
+            var path = string.IsNullOrWhiteSpace(UserMapPath) ? GetDefaultUserMapPath() : UserMapPath;
 
             if (!File.Exists(path))
             {
@@ -133,6 +135,12 @@ namespace Ops.Plugins.Registration
             }
 
             UserAliases = aliases;
+        }
+
+        public static string GetDefaultUserMapPath()
+        {
+            var root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            return Path.Combine(root, "Ops.Plugins", "dataverse-registration-users.json");
         }
     }
 }

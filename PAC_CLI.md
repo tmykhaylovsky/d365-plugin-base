@@ -32,12 +32,12 @@ For fixed step impersonation, prefer a local alias-to-`systemuserid` map:
 
 ```json
 {
-  "Ops Plugin Service": "00000000-0000-0000-0000-000000000000"
+  "Plugin Service User": "00000000-0000-0000-0000-000000000000"
 }
 ```
 
-Pass it with `--userMap <path>`, or let the tool use the default ignored path
-`.claude/dataverse-registration-users.local.json`. Plugin code should use
+Pass it with `--userMap <path>`, or let the tool use the default per-user path
+`%APPDATA%\Ops.Plugins\dataverse-registration-users.json`. Plugin code should use
 `RegisteredEvent.CallingUser` for the default run-as behavior, or a stable alias
 that resolves to a per-environment `systemuserid`.
 
@@ -94,10 +94,17 @@ dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj --
   --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
   --pluginAssemblyId <pluginassembly-guid> `
   --connectionString DATAVERSE_CONNECTION `
+  --pushAssembly `
   --apply
 ```
 
 The tool creates missing steps/images and corrects mismatched rank, filtering attributes, image message property, and image attributes. Existing-step matching uses plug-in type, message, primary entity, stage, and mode. Extra steps/images are reported only; the tool does not delete, disable, enable, change impersonation, or change secure/unsecure configuration.
+
+Use `--pushAssembly` when PAC auth is unavailable or you want one command to update
+the matched `pluginassembly` binary before comparing step metadata. It updates the
+assembly content, version, public key token, and culture on the existing assembly
+row; initial assembly registration still belongs in PRT or an explicit deployment
+process.
 
 The tool validates declared entity logical names before apply, creates steps before
 images, and scopes new step creation to the matched plugin assembly. If a matching

@@ -35,4 +35,5 @@ Prefer the generated early-bound models from `Ops.Plugins.Model` when building D
 - Use generated option-set enums such as `opportunity_statuscode.Won` instead of integer status values.
 - Use `Opportunity.Fields.*` constants for column sets and attribute assertions.
 - Use `Messages.*` and `PluginImageNames.*` constants from `Ops.Plugins.Shared` for standard Dataverse message names and image aliases.
+- Read assembly and plugin type names from `typeof(SomePlugin).Assembly.GetName().Name` and `typeof(SomePlugin).FullName` instead of duplicating project metadata.
 - Keep raw logical-name strings only in generic test infrastructure, negative-path tests for entities not present in the model, or when no early-bound model exists yet.

@@ -6,6 +6,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 - Keep plugin classes stateless. Dataverse can cache and reuse `IPlugin` instances, so do not store services, execution context, target records, or other invocation data in instance fields.
 - Declare the expected runtime and deployment shape in `GetRegisteredEvents()`: message, primary entity, pipeline stage, execution mode, handler, filtering attributes, required image aliases, and image attributes.
+- Include optional deployment metadata there when it matters: step description, execution order, and Run in User's Context. Prefer `RegisteredEvent.CallingUser`; when a fixed user is needed, reference a stable alias that maps to a per-environment `systemuserid`.
 - Point each registered event at a concise step-oriented handler name, such as `OppPostOpUpdateSync`.
 - Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` instead of raw strings for standard Dataverse values.
 - Use generated early-bound model types from `Ops.Plugins.Model` whenever available. Prefer `Opportunity.EntityLogicalName`, `Opportunity.Fields.*`, and generated option-set enums over raw logical names or integer option values.
@@ -17,6 +18,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Register `Update` steps with filtering attributes whenever possible. Do not include the primary key as a filtering attribute.
 - Register only the image aliases and image columns the handler actually needs. Prefer images over retrieves when comparing before and after values.
 - Keep `RegisteredEvent` filtering and image attribute metadata aligned with the real step registration so tests and deployment automation have one source of intent.
+- Store fixed Run in User's Context values as `systemuserid` GUIDs in a local alias map, not as display names. Display names are mutable and can collide.
 - Treat missing filtering attributes and missing image columns as deployment-time validation concerns. Runtime plugin code can trace likely registration issues, but it cannot directly read the Dataverse step registration.
 - Use runtime registration diagnostics as hints: a fired `Update` Target with none of the expected filtering attributes suggests an over-broad step, while an image missing an expected attribute may mean either image misconfiguration or a selected column whose value is null.
 - Choose stage intentionally:
@@ -69,6 +71,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 - Tests should exercise business behavior and registration guards: message, primary entity, stage, mode, required images, filtering behavior, and missing-image exits.
 - Build records with early-bound model classes when available.
+- Assert assembly names from `typeof(SomePlugin).Assembly.GetName().Name` and plugin type names from `typeof(SomePlugin).FullName`; avoid duplicating project metadata in tests.
 - Use `Messages.*`, `PluginImageNames.*`, `Opportunity.EntityLogicalName`, and `Opportunity.Fields.*` in tests.
 - Raw logical-name strings are acceptable only for generic infrastructure, explicit negative-path tests, or entities not generated into `Ops.Plugins.Model`.
 - Keep test project references narrow. `Ops.Plugins.Testing` should reference `Ops.Plugins.csproj`; shared and model code are tested through the compiled plugin assembly.

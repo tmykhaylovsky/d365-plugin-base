@@ -46,8 +46,9 @@ _ReSharper*/
 # VS Code
 .vscode/
 
-# Claude local workspace
+# AI local workspace
 .claude/
+.codex/
 
 # Windows
 Thumbs.db

@@ -19,6 +19,12 @@ namespace Ops.Plugins.Registration
         {
             var desired = _inspector.Inspect(options.AssemblyPath);
             var actual = _repository.Load(desired, options);
+            if (options.PushAssembly)
+            {
+                _repository.PushAssembly(actual.Assembly.Id, options.AssemblyPath);
+                actual = _repository.Load(desired, options);
+            }
+
             var plan = _comparer.Compare(desired, actual, options);
 
             if (options.Apply && plan.Errors == 0)

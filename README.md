@@ -66,13 +66,14 @@ See [`BEST_PRACTICES.md`](BEST_PRACTICES.md) for plugin authoring, registration,
 
 ## Deploying The Plugin DLL
 
-Initial assembly registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll` once so Dataverse has the plugin assembly and plug-in type rows. After that, use `pac plugin push` to update the existing assembly binary, then run `Ops.Plugins.Registration` to dry-run or apply step/image registration from code metadata. See [`PAC_CLI.md`](PAC_CLI.md) for the exact commands.
+Initial assembly registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll` once so Dataverse has the plugin assembly and plug-in type rows. After that, use `pac plugin push` or `Ops.Plugins.Registration --pushAssembly` to update the existing assembly binary, then run `Ops.Plugins.Registration` to dry-run or apply step/image registration from code metadata. See [`PAC_CLI.md`](PAC_CLI.md) for the exact commands.
 
 Local environment access should be cached through PAC auth profiles or user
 environment variables. `.claude/` is ignored and is fine for local URLs and command
 templates, but keep secrets and literal connection strings out of repo files.
 Fixed Run in User's Context values should use a per-environment alias mapped to
-`systemuserid` in an ignored local user map, not a display name.
+`systemuserid` in `%APPDATA%\Ops.Plugins\dataverse-registration-users.json` or an
+explicit `--userMap` file, not a display name.
 
 ## Automating Step Registration
 
@@ -92,7 +93,7 @@ It can also sync optional step description and Run in User's Context metadata.
 
 ## Included Starter Plugin
 
-`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at synchronous `PostOperation`, filtered on `statuscode`, with `PreImage` and `PostImage` image records containing `statuscode` and `actualclosedate`.
+`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at synchronous `PostOperation`, filtered on `statuscode`, with `PreImage` and `PostImage` image records containing `statuscode` and `actualclosedate`. In real production logic, opportunity state/status transitions may be better handled with the platform's state transition messages; this starter intentionally keeps the example compact.
 
 When the opportunity moves to Won, it stamps `actualclosedate` if that field was not already set.
 

@@ -1,13 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ops.Plugins;
+using Ops.Plugins.Model;
 using Ops.Plugins.Registration;
+using Ops.Plugins.Shared;
 using Xunit;
 
 namespace Ops.Plugins.Testing.Registration
 {
     public class RegistrationComparerTests
     {
+        private static readonly string PluginTypeName = typeof(OpportunityWonPlugin).FullName;
+        private static readonly string PluginAssemblyName = typeof(OpportunityWonPlugin).Assembly.GetName().Name;
+
         [Fact]
         public void Compare_CreatesMissingStepAndImage()
         {
@@ -26,7 +32,7 @@ namespace Ops.Plugins.Testing.Registration
         {
             var desired = Desired();
             var step = MatchingStep(filteringAttributes: "");
-            var image = MatchingImage(step, attributes: "statuscode");
+            var image = MatchingImage(step, attributes: Opportunity.Fields.StatusCode);
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
 
@@ -53,7 +59,7 @@ namespace Ops.Plugins.Testing.Registration
             var desired = Desired();
             var step = MatchingStep();
             step.Stage = 20;
-            var image = MatchingImage(step, attributes: "statuscode,actualclosedate");
+            var image = MatchingImage(step, attributes: ExpectedImageAttributes());
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
 
@@ -67,7 +73,7 @@ namespace Ops.Plugins.Testing.Registration
             var desired = Desired();
             var step = MatchingStep();
             step.StateCode = 1;
-            var image = MatchingImage(step, attributes: "statuscode,actualclosedate");
+            var image = MatchingImage(step, attributes: ExpectedImageAttributes());
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
 
@@ -84,57 +90,61 @@ namespace Ops.Plugins.Testing.Registration
         {
             var image = new DesiredImage
             {
-                PluginTypeName = "Ops.Plugins.OpportunityWonPlugin",
-                MessageName = "Update",
-                EntityLogicalName = "opportunity",
+                PluginTypeName = PluginTypeName,
+                MessageName = Messages.Update,
+                EntityLogicalName = Opportunity.EntityLogicalName,
                 StepStage = 40,
                 StepMode = 0,
-                Alias = "PreImage",
+                Alias = PluginImageNames.PreImage,
                 ImageType = 0,
                 MessagePropertyName = "Target",
-                Attributes = AttributeList.Parse("statuscode,actualclosedate")
+                Attributes = AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate })
             };
 
             var step = new DesiredStep
             {
-                PluginTypeName = "Ops.Plugins.OpportunityWonPlugin",
-                MessageName = "Update",
-                EntityLogicalName = "opportunity",
+                PluginTypeName = PluginTypeName,
+                MessageName = Messages.Update,
+                EntityLogicalName = Opportunity.EntityLogicalName,
                 Stage = 40,
                 Mode = 0,
                 Rank = 1,
-                FilteringAttributes = AttributeList.Parse("statuscode"),
+                FilteringAttributes = AttributeList.From(new[] { Opportunity.Fields.StatusCode }),
                 Images = new[] { image }
             };
 
-            return new DesiredRegistration("Ops.Plugins", new[] { new DesiredPluginType(step.PluginTypeName, new[] { step }) });
+            image.PluginTypeName = step.PluginTypeName;
+            image.MessageName = step.MessageName;
+            image.EntityLogicalName = step.EntityLogicalName;
+
+            return new DesiredRegistration(PluginAssemblyName, new[] { new DesiredPluginType(step.PluginTypeName, new[] { step }) });
         }
 
         private static ActualRegistration Actual(IReadOnlyCollection<ActualStep> steps, IReadOnlyCollection<ActualImage> images)
         {
             return new ActualRegistration(
-                new ActualPluginAssembly { Id = Guid.NewGuid(), Name = "Ops.Plugins" },
+                new ActualPluginAssembly { Id = Guid.NewGuid(), Name = PluginAssemblyName },
                 new Dictionary<string, ActualPluginType>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["Ops.Plugins.OpportunityWonPlugin"] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = "Ops.Plugins.OpportunityWonPlugin" }
+                    [PluginTypeName] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = PluginTypeName }
                 },
                 steps,
                 images);
         }
 
-        private static ActualStep MatchingStep(string message = "Update", string filteringAttributes = "statuscode")
+        private static ActualStep MatchingStep(string message = null, string filteringAttributes = null)
         {
             return new ActualStep
             {
                 Id = Guid.NewGuid(),
-                PluginTypeName = "Ops.Plugins.OpportunityWonPlugin",
+                PluginTypeName = PluginTypeName,
                 PluginTypeId = Guid.NewGuid(),
-                MessageName = message,
-                EntityLogicalName = "opportunity",
+                MessageName = message ?? Messages.Update,
+                EntityLogicalName = Opportunity.EntityLogicalName,
                 Stage = 40,
                 Mode = 0,
                 Rank = 1,
-                FilteringAttributes = AttributeList.Parse(filteringAttributes),
+                FilteringAttributes = AttributeList.Parse(filteringAttributes ?? Opportunity.Fields.StatusCode),
                 StateCode = 0
             };
         }
@@ -146,11 +156,16 @@ namespace Ops.Plugins.Testing.Registration
                 Id = Guid.NewGuid(),
                 StepId = step.Id,
                 StepKey = step.Key,
-                Alias = "PreImage",
+                Alias = PluginImageNames.PreImage,
                 ImageType = 0,
                 MessagePropertyName = "Target",
                 Attributes = AttributeList.Parse(attributes)
             };
+        }
+
+        private static string ExpectedImageAttributes()
+        {
+            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate }).ToString();
         }
     }
 }
