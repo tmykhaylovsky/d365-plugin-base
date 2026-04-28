@@ -17,9 +17,9 @@ using Microsoft.Xrm.Sdk.Query;
 //       [Fact]
 //       public void GivenOpportunityWon_SetsCloseDate()
 //       {
-//           var opportunity = BuildEntity("opportunity", Guid.NewGuid(),
-//               ("statuscode", new OptionSetValue(3)));
-//           var ctx = BuildContext("Update", "opportunity", opportunity);
+//           var opportunity = new Opportunity { Id = Guid.NewGuid() };
+//           opportunity.StatusCode = opportunity_statuscode.Won;
+//           var ctx = BuildUpdateContext(opportunity);
 //           Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 //           // assert on Context.Data or service calls
 //       }

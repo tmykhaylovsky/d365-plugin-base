@@ -1,8 +1,8 @@
 using System;
-using Microsoft.Xrm.Sdk;
+using Microsoft.Xrm.Sdk.Query;
 using Ops.Plugins;
+using Ops.Plugins.Model;
 using Ops.Plugins.Shared;
-using Ops.Plugins.Testing;
 using Xunit;
 
 // Tests for OpportunityWonPlugin.
@@ -13,25 +13,27 @@ namespace Ops.Plugins.Testing
 {
     public class OpportunityWonPluginTests : PluginTestBase
     {
-        private const int StatusOpen   = 1;
-        private const int StatusWon    = 3;
         private static readonly Guid OpportunityId = Guid.NewGuid();
 
         // -----------------------------------------------------------------------
         // Helpers
         // -----------------------------------------------------------------------
 
-        private Entity MakeTarget(int statusCode) =>
-            BuildEntity("opportunity", OpportunityId,
-                ("statuscode", new OptionSetValue(statusCode)));
+        private Opportunity MakeTarget(opportunity_statuscode statusCode) =>
+            BuildOpportunity(statusCode);
 
-        private Entity MakePreImage(int statusCode, DateTime? closeDate = null)
+        private Opportunity MakePreImage(opportunity_statuscode statusCode, DateTime? closeDate = null)
         {
-            var e = BuildEntity("opportunity", OpportunityId,
-                ("statuscode", new OptionSetValue(statusCode)));
-            if (closeDate.HasValue)
-                e["actualclosedate"] = closeDate.Value;
-            return e;
+            var opportunity = BuildOpportunity(statusCode);
+            opportunity.ActualCloseDate = closeDate;
+            return opportunity;
+        }
+
+        private static Opportunity BuildOpportunity(opportunity_statuscode statusCode)
+        {
+            var opportunity = new Opportunity { Id = OpportunityId };
+            opportunity.StatusCode = statusCode;
+            return opportunity;
         }
 
         // -----------------------------------------------------------------------
@@ -42,8 +44,8 @@ namespace Ops.Plugins.Testing
         public void WhenStatusChangesToWon_AndCloseDateNotSet_StampsCloseDate()
         {
             // Arrange
-            var preImage = MakePreImage(StatusOpen);
-            var target   = MakeTarget(StatusWon);
+            var preImage = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = MakeTarget(opportunity_statuscode.Won);
             Seed(preImage);
 
             var ctx = BuildUpdateContext(target, preImage: preImage);
@@ -51,11 +53,11 @@ namespace Ops.Plugins.Testing
             // Act
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 
-            // Assert — opportunity in the in-memory store should now have actualclosedate
-            var updated = Service.Retrieve("opportunity", OpportunityId,
-                new Microsoft.Xrm.Sdk.Query.ColumnSet("actualclosedate"));
+            // Assert - opportunity in the in-memory store should now have actualclosedate
+            var updated = Service.Retrieve(Opportunity.EntityLogicalName, OpportunityId,
+                new ColumnSet(Opportunity.Fields.ActualCloseDate));
 
-            Assert.True(updated.HasValue("actualclosedate"),
+            Assert.True(updated.HasValue(Opportunity.Fields.ActualCloseDate),
                 "actualclosedate should have been stamped when Opportunity moved to Won");
         }
 
@@ -64,21 +66,20 @@ namespace Ops.Plugins.Testing
         {
             // Arrange
             var existingClose = new DateTime(2026, 1, 15);
-            var preImage      = MakePreImage(StatusOpen, existingClose);
-            var target        = MakeTarget(StatusWon);
+            var preImage      = MakePreImage(opportunity_statuscode.InProgress, existingClose);
+            var target        = MakeTarget(opportunity_statuscode.Won);
             Seed(preImage);
 
             var ctx = BuildUpdateContext(target, preImage: preImage);
 
-            // Act — no exception means it ran cleanly; verify no Update SDK call was made
+            // Act - no exception means it ran cleanly; verify no Update SDK call was made
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 
-            // Assert — close date on the seeded record should be unchanged
-            var record = Service.Retrieve("opportunity", OpportunityId,
-                new Microsoft.Xrm.Sdk.Query.ColumnSet("actualclosedate"));
+            // Assert - close date on the seeded record should be unchanged
+            var record = Service.Retrieve(Opportunity.EntityLogicalName, OpportunityId,
+                new ColumnSet(Opportunity.Fields.ActualCloseDate)).ToEntity<Opportunity>();
 
-            var actualClose = record.GetAttributeValue<DateTime>("actualclosedate");
-            Assert.Equal(existingClose, actualClose);
+            Assert.Equal(existingClose, record.ActualCloseDate);
         }
 
         // -----------------------------------------------------------------------
@@ -88,14 +89,14 @@ namespace Ops.Plugins.Testing
         [Fact]
         public void WhenStatusCodeDidNotChange_PluginExitsEarly()
         {
-            // Arrange — target has same status as pre-image
-            var preImage = MakePreImage(StatusOpen);
-            var target   = MakeTarget(StatusOpen); // no change
+            // Arrange - target has same status as pre-image
+            var preImage = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = MakeTarget(opportunity_statuscode.InProgress); // no change
             Seed(preImage);
 
             var ctx = BuildUpdateContext(target, preImage: preImage);
 
-            // Act & Assert — should complete without any SDK calls
+            // Act & Assert - should complete without any SDK calls
             var exception = Record.Exception(() =>
                 Context.ExecutePluginWith<OpportunityWonPlugin>(ctx));
 
@@ -105,9 +106,9 @@ namespace Ops.Plugins.Testing
         [Fact]
         public void WhenStatusChangesToNonWon_PluginExitsEarly()
         {
-            // Arrange — status changes to something other than Won
-            var preImage = MakePreImage(StatusOpen);
-            var target   = MakeTarget(2); // Closed (some other status)
+            // Arrange - status changes to something other than Won
+            var preImage = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = MakeTarget(opportunity_statuscode.OnHold);
             Seed(preImage);
 
             var ctx = BuildUpdateContext(target, preImage: preImage);
