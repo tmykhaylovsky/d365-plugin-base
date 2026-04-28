@@ -95,15 +95,14 @@ After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` if ne
 
 `Ops.Plugins/PluginKey.snk` is used by `Ops.Plugins.csproj` via `SignAssembly` and `AssemblyOriginatorKeyFile`. This starter repo allows that specific key file to be committed so all machines can build assemblies with the same strong-name identity.
 
-On Windows, the first Visual Studio or MSBuild build creates a local `PluginKey.snk` automatically by running `Ops.Plugins/New-PluginSigningKey.ps1`, which uses the Windows SDK `sn.exe` tool. The generated `.snk` is a passwordless strong-name key pair. The helper also ensures `Ops.Plugins.csproj` contains `SignAssembly` and `AssemblyOriginatorKeyFile`.
+On Windows, the first Visual Studio or MSBuild build creates a local `PluginKey.snk` automatically by running `Scripts/New-PluginSigningKey.ps1`, which uses the Windows SDK `sn.exe` tool. The generated `.snk` is a passwordless strong-name key pair. The helper also ensures `Ops.Plugins.csproj` contains `SignAssembly` and `AssemblyOriginatorKeyFile`.
 
 A public `.snk` is acceptable for a shared starter template or dev/test assembly identity, but it is not a security boundary. Anyone with the private `.snk` can build a different DLL with the same strong name. They still need Dataverse deployment permissions to upload that DLL, but for production environments you may prefer an organization-controlled private key.
 
-You can also create the key explicitly after changing into the plugin project folder:
+You can also create the key explicitly from the repository root:
 
 ```powershell
-cd Ops.Plugins
-.\New-PluginSigningKey.ps1 -Path .\PluginKey.snk
+.\Scripts\New-PluginSigningKey.ps1 -ProjectPath .\Ops.Plugins\Ops.Plugins.csproj
 ```
 
 If key creation fails, install the .NET Framework SDK component for Visual Studio, or run this from a Visual Studio Developer PowerShell:
@@ -116,3 +115,18 @@ sn -k PluginKey.snk
 ## Notes For Customization
 
 Rename namespaces from `Ops.Plugins` to your client or product namespace only after the starter solution builds and tests cleanly. Keep the plugin base and model folders imported through shared project `.projitems` so the deployable assembly stays a single signed DLL.
+
+Use the root scripts for repeatable setup tasks:
+
+```powershell
+# Preview all namespace-style Ops. renames without changing files.
+.\Scripts\Rename-SolutionPrefix.ps1 -NewPrefix Contoso
+
+# Apply the previewed content, file, and folder renames.
+.\Scripts\Rename-SolutionPrefix.ps1 -NewPrefix Contoso -Apply
+
+# Explicitly create or verify the plugin signing key.
+.\Scripts\New-PluginSigningKey.ps1 -ProjectPath .\Ops.Plugins\Ops.Plugins.csproj
+```
+
+`Rename-SolutionPrefix.ps1` only targets `Ops.`-style prefixes by default, so standalone strings like `Ops` are left alone. Use `-ReplaceStandalonePrefix` only when you really want every standalone `Ops` identifier changed too.

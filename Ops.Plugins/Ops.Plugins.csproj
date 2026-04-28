@@ -14,7 +14,7 @@
           BeforeTargets="CoreCompile"
           Condition="'$(SignAssembly)' == 'true' and '$(AssemblyOriginatorKeyFile)' != '' and !Exists('$(AssemblyOriginatorKeyFile)')">
     <Message Importance="high" Text="Creating local plugin signing key: $(AssemblyOriginatorKeyFile)" />
-    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\New-PluginSigningKey.ps1&quot; -Path &quot;$(MSBuildProjectDirectory)\$(AssemblyOriginatorKeyFile)&quot;" />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\..\Scripts\New-PluginSigningKey.ps1&quot; -ProjectPath &quot;$(MSBuildProjectFullPath)&quot; -Path &quot;$(MSBuildProjectDirectory)\$(AssemblyOriginatorKeyFile)&quot;" />
   </Target>
 
   <Import Project="..\Ops.Plugins.Shared\Ops.Plugins.Shared.projitems" Label="Shared" />
