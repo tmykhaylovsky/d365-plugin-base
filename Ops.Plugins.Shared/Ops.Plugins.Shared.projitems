@@ -15,6 +15,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)FetchXml\FilterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FetchXml\LinkEntityBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Messages.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ParameterNames.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginImageNames.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginExtensions.cs" />

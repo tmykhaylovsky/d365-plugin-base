@@ -179,10 +179,10 @@ namespace Ops.Plugins.Shared
             // --- Target ---
 
             public Entity GetTarget() =>
-                ExecutionContext.InputParameters.TryGetValue("Target", out var raw) && raw is Entity e ? e : null;
+                ExecutionContext.InputParameters.TryGetValue(ParameterNames.Target, out var raw) && raw is Entity e ? e : null;
 
             public EntityReference GetTargetReference() =>
-                ExecutionContext.InputParameters.TryGetValue("Target", out var raw) && raw is EntityReference r ? r : null;
+                ExecutionContext.InputParameters.TryGetValue(ParameterNames.Target, out var raw) && raw is EntityReference r ? r : null;
 
             // --- Images ---
 
@@ -220,7 +220,7 @@ namespace Ops.Plugins.Shared
 
             // --- Custom API ---
 
-            public bool IsCustomApi => !ExecutionContext.InputParameters.Contains("Target");
+            public bool IsCustomApi => !ExecutionContext.InputParameters.Contains(ParameterNames.Target);
 
             public T GetInputParameter<T>(string name) =>
                 ExecutionContext.InputParameters.TryGetValue(name, out var v) && v is T t ? t : default;

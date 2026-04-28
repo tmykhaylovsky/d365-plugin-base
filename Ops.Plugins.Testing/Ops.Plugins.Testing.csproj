@@ -19,9 +19,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ops.Plugins\Ops.Plugins.csproj" />
+    <ProjectReference Include="..\Ops.Plugins\Ops.Plugins.csproj" Aliases="PluginAssembly" />
     <ProjectReference Include="..\Ops.Plugins.Registration\Ops.Plugins.Registration.csproj" />
   </ItemGroup>
+
+  <Import Project="..\Ops.Plugins.Shared\Ops.Plugins.Shared.projitems" Label="Shared" />
 
 </Project>
 

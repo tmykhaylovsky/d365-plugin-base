@@ -72,7 +72,7 @@ namespace Ops.Plugins.Testing
             ctx.PostEntityImages    = new EntityImageCollection();
 
             if (target != null)
-                ctx.InputParameters["Target"] = target;
+                ctx.InputParameters[ParameterNames.Target] = target;
 
             if (preImage != null)
                 ctx.PreEntityImages[PluginImageNames.PreImage] = preImage;
@@ -109,7 +109,7 @@ namespace Ops.Plugins.Testing
         {
             var ctx = BuildContext(Messages.Delete, entityName,
                 stage: PluginStage.PreOperation, preImage: preImage, userId: userId);
-            ctx.InputParameters["Target"] = new EntityReference(entityName, recordId);
+            ctx.InputParameters[ParameterNames.Target] = new EntityReference(entityName, recordId);
             return ctx;
         }
 

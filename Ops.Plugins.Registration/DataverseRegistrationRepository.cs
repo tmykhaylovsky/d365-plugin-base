@@ -10,6 +10,7 @@ using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using Microsoft.Xrm.Sdk.Query;
+using Ops.Plugins.Model;
 
 namespace Ops.Plugins.Registration
 {
@@ -76,33 +77,36 @@ namespace Ops.Plugins.Registration
         public virtual void PushAssembly(Guid pluginAssemblyId, string assemblyPath)
         {
             var assemblyName = AssemblyName.GetAssemblyName(assemblyPath);
-            var update = new Entity("pluginassembly", pluginAssemblyId);
-            update["content"] = Convert.ToBase64String(File.ReadAllBytes(assemblyPath));
-            update["version"] = assemblyName.Version?.ToString();
-            update["publickeytoken"] = PublicKeyTokenToString(assemblyName.GetPublicKeyToken());
-            update["culture"] = string.IsNullOrWhiteSpace(assemblyName.CultureName) ? "neutral" : assemblyName.CultureName;
+            var update = new PluginAssembly
+            {
+                Id = pluginAssemblyId,
+                Content = Convert.ToBase64String(File.ReadAllBytes(assemblyPath)),
+                Version = assemblyName.Version?.ToString(),
+                PublicKeyToken = PublicKeyTokenToString(assemblyName.GetPublicKeyToken()),
+                Culture = string.IsNullOrWhiteSpace(assemblyName.CultureName) ? "neutral" : assemblyName.CultureName
+            };
             _service.Update(update);
         }
 
         private ActualPluginAssembly FindAssembly(DesiredRegistration desired, RegistrationOptions options)
         {
-            var query = new QueryExpression("pluginassembly")
+            var query = new QueryExpression(PluginAssembly.EntityLogicalName)
             {
-                ColumnSet = new ColumnSet("pluginassemblyid", "name")
+                ColumnSet = new ColumnSet(PluginAssembly.Fields.PluginAssemblyId, PluginAssembly.Fields.Name)
             };
 
             if (options.PluginAssemblyId.HasValue)
-                query.Criteria.AddCondition("pluginassemblyid", ConditionOperator.Equal, options.PluginAssemblyId.Value);
+                query.Criteria.AddCondition(PluginAssembly.Fields.PluginAssemblyId, ConditionOperator.Equal, options.PluginAssemblyId.Value);
             else
-                query.Criteria.AddCondition("name", ConditionOperator.Equal, string.IsNullOrWhiteSpace(options.AssemblyName) ? desired.AssemblyName : options.AssemblyName);
+                query.Criteria.AddCondition(PluginAssembly.Fields.Name, ConditionOperator.Equal, string.IsNullOrWhiteSpace(options.AssemblyName) ? desired.AssemblyName : options.AssemblyName);
 
-            var entity = _service.RetrieveMultiple(query).Entities.SingleOrDefault();
+            var entity = _service.RetrieveMultiple(query).Entities.SingleOrDefault()?.ToEntity<PluginAssembly>();
             if (entity == null) throw new InvalidOperationException("Dataverse pluginassembly was not found. Run pac plugin push first or pass --pluginAssemblyId.");
 
             return new ActualPluginAssembly
             {
                 Id = entity.Id,
-                Name = entity.GetAttributeValue<string>("name")
+                Name = entity.Name
             };
         }
 
@@ -134,14 +138,18 @@ namespace Ops.Plugins.Registration
 
         private IReadOnlyDictionary<string, ActualPluginType> LoadPluginTypes(Guid assemblyId)
         {
-            var query = new QueryExpression("plugintype")
+            var query = new QueryExpression(PluginType.EntityLogicalName)
             {
-                ColumnSet = new ColumnSet("plugintypeid", "typename")
+                ColumnSet = new ColumnSet(PluginType.Fields.PluginTypeId, PluginType.Fields.TypeName)
             };
-            query.Criteria.AddCondition("pluginassemblyid", ConditionOperator.Equal, assemblyId);
+            query.Criteria.AddCondition(PluginType.Fields.PluginAssemblyId, ConditionOperator.Equal, assemblyId);
 
             return _service.RetrieveMultiple(query).Entities
-                .Select(e => new ActualPluginType { Id = e.Id, TypeName = e.GetAttributeValue<string>("typename") })
+                .Select(e =>
+                {
+                    var pluginType = e.ToEntity<PluginType>();
+                    return new ActualPluginType { Id = pluginType.Id, TypeName = pluginType.TypeName };
+                })
                 .GroupBy(t => t.TypeName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
         }
@@ -150,36 +158,37 @@ namespace Ops.Plugins.Registration
         {
             if (pluginTypeIds.Length == 0) return Array.Empty<ActualStep>();
 
-            var query = new QueryExpression("sdkmessageprocessingstep")
+            var query = new QueryExpression(SdkMessageProcessingStep.EntityLogicalName)
             {
                 ColumnSet = new ColumnSet(
-                    "sdkmessageprocessingstepid",
-                    "eventhandler",
-                    "sdkmessageid",
-                    "sdkmessagefilterid",
-                    "stage",
-                    "mode",
-                    "rank",
-                    "filteringattributes",
-                    "statecode",
-                    "ismanaged",
-                    "description",
-                    "configuration",
-                    "impersonatinguserid")
+                    SdkMessageProcessingStep.Fields.SdkMessageProcessingStepId,
+                    SdkMessageProcessingStep.Fields.EventHandler,
+                    SdkMessageProcessingStep.Fields.SdkMessageId,
+                    SdkMessageProcessingStep.Fields.SdkMessageFilterId,
+                    SdkMessageProcessingStep.Fields.Stage,
+                    SdkMessageProcessingStep.Fields.Mode,
+                    SdkMessageProcessingStep.Fields.Rank,
+                    SdkMessageProcessingStep.Fields.FilteringAttributes,
+                    SdkMessageProcessingStep.Fields.StateCode,
+                    SdkMessageProcessingStep.Fields.IsManaged,
+                    SdkMessageProcessingStep.Fields.Description,
+                    SdkMessageProcessingStep.Fields.Configuration,
+                    SdkMessageProcessingStep.Fields.ImpersonatingUserId)
             };
-            query.Criteria.AddCondition("eventhandler", ConditionOperator.In, pluginTypeIds.Cast<object>().ToArray());
+            query.Criteria.AddCondition(SdkMessageProcessingStep.Fields.EventHandler, ConditionOperator.In, pluginTypeIds.Cast<object>().ToArray());
 
             var typeById = pluginTypes.Values.ToDictionary(t => t.Id, t => t);
             var steps = new List<ActualStep>();
 
-            foreach (var entity in _service.RetrieveMultiple(query).Entities)
+            foreach (var row in _service.RetrieveMultiple(query).Entities)
             {
-                var pluginTypeRef = entity.GetAttributeValue<EntityReference>("eventhandler");
+                var entity = row.ToEntity<SdkMessageProcessingStep>();
+                var pluginTypeRef = entity.EventHandler;
                 if (pluginTypeRef == null || !typeById.ContainsKey(pluginTypeRef.Id)) continue;
 
-                var messageRef = entity.GetAttributeValue<EntityReference>("sdkmessageid");
-                var filterRef = entity.GetAttributeValue<EntityReference>("sdkmessagefilterid");
-                var filter = filterRef == null ? null : RetrieveFilter(filterRef.Id);
+                var messageRef = entity.SdkMessageId;
+                var filterRef = entity.SdkMessageFilterId;
+                var filter = filterRef == null ? null : RetrieveFilter(filterRef.Id)?.ToEntity<SdkMessageFilter>();
 
                 steps.Add(new ActualStep
                 {
@@ -187,18 +196,18 @@ namespace Ops.Plugins.Registration
                     PluginTypeId = pluginTypeRef.Id,
                     PluginTypeName = typeById[pluginTypeRef.Id].TypeName,
                     MessageId = messageRef == null ? Guid.Empty : messageRef.Id,
-                    MessageName = messageRef == null ? null : RetrieveMessage(messageRef.Id).GetAttributeValue<string>("name"),
+                    MessageName = messageRef == null ? null : RetrieveMessage(messageRef.Id).ToEntity<SdkMessage>().Name,
                     MessageFilterId = filterRef == null ? (Guid?)null : filterRef.Id,
-                    EntityLogicalName = filter?.GetAttributeValue<string>("primaryobjecttypecode"),
-                    Stage = entity.GetAttributeValue<OptionSetValue>("stage")?.Value ?? 0,
-                    Mode = entity.GetAttributeValue<OptionSetValue>("mode")?.Value ?? 0,
-                    Rank = entity.GetAttributeValue<int?>("rank") ?? 1,
-                    FilteringAttributes = AttributeList.Parse(entity.GetAttributeValue<string>("filteringattributes")),
-                    StateCode = entity.GetAttributeValue<OptionSetValue>("statecode")?.Value ?? 0,
-                    IsManaged = entity.GetAttributeValue<bool?>("ismanaged") ?? false,
-                    Description = entity.GetAttributeValue<string>("description"),
-                    UnsecureConfiguration = entity.GetAttributeValue<string>("configuration"),
-                    ImpersonatingUserId = entity.GetAttributeValue<EntityReference>("impersonatinguserid")
+                    EntityLogicalName = filter?.PrimaryObjectTypeCode,
+                    Stage = (int?)entity.Stage ?? 0,
+                    Mode = (int?)entity.Mode ?? 0,
+                    Rank = entity.Rank ?? 1,
+                    FilteringAttributes = AttributeList.Parse(entity.FilteringAttributes),
+                    StateCode = (int?)entity.StateCode ?? 0,
+                    IsManaged = entity.IsManaged ?? false,
+                    Description = entity.Description,
+                    UnsecureConfiguration = entity.Configuration,
+                    ImpersonatingUserId = entity.ImpersonatingUserId
                 });
             }
 
@@ -209,17 +218,24 @@ namespace Ops.Plugins.Registration
         {
             if (!steps.Any()) return Array.Empty<ActualImage>();
 
-            var query = new QueryExpression("sdkmessageprocessingstepimage")
+            var query = new QueryExpression(SdkMessageProcessingStepImage.EntityLogicalName)
             {
-                ColumnSet = new ColumnSet("sdkmessageprocessingstepimageid", "sdkmessageprocessingstepid", "entityalias", "imagetype", "messagepropertyname", "attributes")
+                ColumnSet = new ColumnSet(
+                    SdkMessageProcessingStepImage.Fields.SdkMessageProcessingStepImageId,
+                    SdkMessageProcessingStepImage.Fields.SdkMessageProcessingStepId,
+                    SdkMessageProcessingStepImage.Fields.EntityAlias,
+                    SdkMessageProcessingStepImage.Fields.ImageType,
+                    SdkMessageProcessingStepImage.Fields.MessagePropertyName,
+                    SdkMessageProcessingStepImage.Fields.Attributes1)
             };
-            query.Criteria.AddCondition("sdkmessageprocessingstepid", ConditionOperator.In, steps.Select(s => (object)s.Id).ToArray());
+            query.Criteria.AddCondition(SdkMessageProcessingStepImage.Fields.SdkMessageProcessingStepId, ConditionOperator.In, steps.Select(s => (object)s.Id).ToArray());
 
             var stepById = steps.ToDictionary(s => s.Id, s => s);
             var images = new List<ActualImage>();
-            foreach (var entity in _service.RetrieveMultiple(query).Entities)
+            foreach (var row in _service.RetrieveMultiple(query).Entities)
             {
-                var stepRef = entity.GetAttributeValue<EntityReference>("sdkmessageprocessingstepid");
+                var entity = row.ToEntity<SdkMessageProcessingStepImage>();
+                var stepRef = entity.SdkMessageProcessingStepId;
                 if (stepRef == null || !stepById.ContainsKey(stepRef.Id)) continue;
 
                 images.Add(new ActualImage
@@ -227,10 +243,10 @@ namespace Ops.Plugins.Registration
                     Id = entity.Id,
                     StepId = stepRef.Id,
                     StepKey = stepById[stepRef.Id].Key,
-                    Alias = entity.GetAttributeValue<string>("entityalias"),
-                    ImageType = entity.GetAttributeValue<OptionSetValue>("imagetype")?.Value ?? 0,
-                    MessagePropertyName = entity.GetAttributeValue<string>("messagepropertyname"),
-                    Attributes = AttributeList.Parse(entity.GetAttributeValue<string>("attributes"))
+                    Alias = entity.EntityAlias,
+                    ImageType = (int?)entity.ImageType ?? 0,
+                    MessagePropertyName = entity.MessagePropertyName,
+                    Attributes = AttributeList.Parse(entity.Attributes1)
                 });
             }
 
@@ -246,18 +262,20 @@ namespace Ops.Plugins.Registration
                 var message = GetMessage(desired.MessageName);
                 var filter = GetFilter(message.Id, desired.EntityLogicalName);
                 var runAsUserId = ResolveRunInUserContext(desired.RunInUserContext);
-                var entity = new Entity("sdkmessageprocessingstep");
-                entity["name"] = $"{desired.PluginTypeName}: {desired.MessageName} of {desired.EntityLogicalName}";
-                entity["eventhandler"] = new EntityReference("plugintype", pluginType.Id);
-                entity["sdkmessageid"] = new EntityReference("sdkmessage", message.Id);
-                if (filter != null) entity["sdkmessagefilterid"] = new EntityReference("sdkmessagefilter", filter.Id);
+                var entity = new SdkMessageProcessingStep
+                {
+                    Name = $"{desired.PluginTypeName}: {desired.MessageName} of {desired.EntityLogicalName}",
+                    EventHandler = new EntityReference(PluginType.EntityLogicalName, pluginType.Id),
+                    SdkMessageId = new EntityReference(SdkMessage.EntityLogicalName, message.Id),
+                    SdkMessageFilterId = filter == null ? null : new EntityReference(SdkMessageFilter.EntityLogicalName, filter.Id)
+                };
                 SetStepFields(entity, desired, runAsUserId);
                 var id = _service.Create(entity);
                 _createdStepIds[desired.Key] = id;
                 return;
             }
 
-            var update = new Entity("sdkmessageprocessingstep", change.ActualStep.Id);
+            var update = new SdkMessageProcessingStep { Id = change.ActualStep.Id };
             SetStepFields(update, desired, ResolveRunInUserContext(desired.RunInUserContext));
             _service.Update(update);
         }
@@ -268,51 +286,53 @@ namespace Ops.Plugins.Registration
             if (change.Action == RegistrationActionKind.Create)
             {
                 var stepId = change.ActualStep?.Id ?? FindStepId(desired.StepKey);
-                var entity = new Entity("sdkmessageprocessingstepimage");
-                entity["sdkmessageprocessingstepid"] = new EntityReference("sdkmessageprocessingstep", stepId);
+                var entity = new SdkMessageProcessingStepImage
+                {
+                    SdkMessageProcessingStepId = new EntityReference(SdkMessageProcessingStep.EntityLogicalName, stepId)
+                };
                 SetImageFields(entity, desired);
                 _service.Create(entity);
                 return;
             }
 
-            var update = new Entity("sdkmessageprocessingstepimage", change.ActualImage.Id);
+            var update = new SdkMessageProcessingStepImage { Id = change.ActualImage.Id };
             SetImageFields(update, desired);
             _service.Update(update);
         }
 
-        private void SetStepFields(Entity entity, DesiredStep desired, Guid? runAsUserId)
+        private void SetStepFields(SdkMessageProcessingStep entity, DesiredStep desired, Guid? runAsUserId)
         {
-            entity["stage"] = new OptionSetValue(desired.Stage);
-            entity["mode"] = new OptionSetValue(desired.Mode);
-            entity["rank"] = desired.Rank;
-            entity["filteringattributes"] = desired.FilteringAttributes.ToString();
-            entity["supporteddeployment"] = new OptionSetValue(0);
-            if (!string.IsNullOrWhiteSpace(desired.Description)) entity["description"] = desired.Description;
-            entity["impersonatinguserid"] = runAsUserId.HasValue ? new EntityReference("systemuser", runAsUserId.Value) : null;
+            entity.Stage = (sdkmessageprocessingstep_stage)desired.Stage;
+            entity.Mode = (sdkmessageprocessingstep_mode)desired.Mode;
+            entity.Rank = desired.Rank;
+            entity.FilteringAttributes = desired.FilteringAttributes.ToString();
+            entity.SupportedDeployment = sdkmessageprocessingstep_supporteddeployment.ServerOnly;
+            if (!string.IsNullOrWhiteSpace(desired.Description)) entity.Description = desired.Description;
+            entity.ImpersonatingUserId = runAsUserId.HasValue ? new EntityReference("systemuser", runAsUserId.Value) : null;
         }
 
-        private void SetImageFields(Entity entity, DesiredImage desired)
+        private void SetImageFields(SdkMessageProcessingStepImage entity, DesiredImage desired)
         {
-            entity["entityalias"] = desired.Alias;
-            entity["name"] = desired.Alias;
-            entity["imagetype"] = new OptionSetValue(desired.ImageType);
-            entity["messagepropertyname"] = desired.MessagePropertyName;
-            entity["attributes"] = desired.Attributes.ToString();
+            entity.EntityAlias = desired.Alias;
+            entity.Name = desired.Alias;
+            entity.ImageType = (sdkmessageprocessingstepimage_imagetype)desired.ImageType;
+            entity.MessagePropertyName = desired.MessagePropertyName;
+            entity.Attributes1 = desired.Attributes.ToString();
         }
 
         private ActualPluginType LoadPluginTypeByName(string typeName)
         {
-            var query = new QueryExpression("plugintype") { ColumnSet = new ColumnSet("plugintypeid", "typename") };
-            query.Criteria.AddCondition("typename", ConditionOperator.Equal, typeName);
+            var query = new QueryExpression(PluginType.EntityLogicalName) { ColumnSet = new ColumnSet(PluginType.Fields.PluginTypeId, PluginType.Fields.TypeName) };
+            query.Criteria.AddCondition(PluginType.Fields.TypeName, ConditionOperator.Equal, typeName);
             if (_loadedAssemblyId.HasValue)
-                query.Criteria.AddCondition("pluginassemblyid", ConditionOperator.Equal, _loadedAssemblyId.Value);
+                query.Criteria.AddCondition(PluginType.Fields.PluginAssemblyId, ConditionOperator.Equal, _loadedAssemblyId.Value);
 
             var entities = _service.RetrieveMultiple(query).Entities;
             if (entities.Count == 0) throw new InvalidOperationException("plugintype not found for target assembly: " + typeName);
             if (entities.Count > 1) throw new InvalidOperationException("Multiple plugintype rows found for target assembly: " + typeName);
 
-            var entity = entities.Single();
-            return new ActualPluginType { Id = entity.Id, TypeName = entity.GetAttributeValue<string>("typename") };
+            var entity = entities.Single().ToEntity<PluginType>();
+            return new ActualPluginType { Id = entity.Id, TypeName = entity.TypeName };
         }
 
         private Guid? ResolveRunInUserContext(string value)
@@ -345,7 +365,7 @@ namespace Ops.Plugins.Registration
             var key = id.ToString("N");
             Entity cached;
             if (_messageCache.TryGetValue(key, out cached)) return cached;
-            cached = _service.Retrieve("sdkmessage", id, new ColumnSet("name"));
+            cached = _service.Retrieve(SdkMessage.EntityLogicalName, id, new ColumnSet(SdkMessage.Fields.Name));
             _messageCache[key] = cached;
             return cached;
         }
@@ -355,7 +375,7 @@ namespace Ops.Plugins.Registration
             var key = id.ToString("N");
             Entity cached;
             if (_filterCache.TryGetValue(key, out cached)) return cached;
-            cached = _service.Retrieve("sdkmessagefilter", id, new ColumnSet("primaryobjecttypecode"));
+            cached = _service.Retrieve(SdkMessageFilter.EntityLogicalName, id, new ColumnSet(SdkMessageFilter.Fields.PrimaryObjectTypeCode));
             _filterCache[key] = cached;
             return cached;
         }
@@ -366,8 +386,8 @@ namespace Ops.Plugins.Registration
             Entity cached;
             if (_messageCache.TryGetValue(key, out cached)) return cached;
 
-            var query = new QueryExpression("sdkmessage") { ColumnSet = new ColumnSet("sdkmessageid", "name") };
-            query.Criteria.AddCondition("name", ConditionOperator.Equal, messageName);
+            var query = new QueryExpression(SdkMessage.EntityLogicalName) { ColumnSet = new ColumnSet(SdkMessage.Fields.SdkMessageId, SdkMessage.Fields.Name) };
+            query.Criteria.AddCondition(SdkMessage.Fields.Name, ConditionOperator.Equal, messageName);
             cached = _service.RetrieveMultiple(query).Entities.SingleOrDefault();
             if (cached == null) throw new InvalidOperationException("sdkmessage not found: " + messageName);
             _messageCache[key] = cached;
@@ -381,9 +401,9 @@ namespace Ops.Plugins.Registration
             Entity cached;
             if (_filterCache.TryGetValue(key, out cached)) return cached;
 
-            var query = new QueryExpression("sdkmessagefilter") { ColumnSet = new ColumnSet("sdkmessagefilterid", "primaryobjecttypecode") };
-            query.Criteria.AddCondition("sdkmessageid", ConditionOperator.Equal, messageId);
-            query.Criteria.AddCondition("primaryobjecttypecode", ConditionOperator.Equal, entityLogicalName);
+            var query = new QueryExpression(SdkMessageFilter.EntityLogicalName) { ColumnSet = new ColumnSet(SdkMessageFilter.Fields.SdkMessageFilterId, SdkMessageFilter.Fields.PrimaryObjectTypeCode) };
+            query.Criteria.AddCondition(SdkMessageFilter.Fields.SdkMessageId, ConditionOperator.Equal, messageId);
+            query.Criteria.AddCondition(SdkMessageFilter.Fields.PrimaryObjectTypeCode, ConditionOperator.Equal, entityLogicalName);
             cached = _service.RetrieveMultiple(query).Entities.SingleOrDefault();
             if (cached == null) throw new InvalidOperationException($"sdkmessagefilter not found for {entityLogicalName}.");
             _filterCache[key] = cached;

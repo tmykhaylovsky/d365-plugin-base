@@ -1,10 +1,12 @@
+extern alias PluginAssembly;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ops.Plugins;
-using Ops.Plugins.Model;
 using Ops.Plugins.Registration;
 using Ops.Plugins.Shared;
+using PluginAssembly::Ops.Plugins;
+using PluginAssembly::Ops.Plugins.Model;
 using Xunit;
 
 namespace Ops.Plugins.Testing.Registration

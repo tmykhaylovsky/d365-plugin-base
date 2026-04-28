@@ -7,9 +7,11 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Keep plugin classes stateless. Dataverse can cache and reuse `IPlugin` instances, so do not store services, execution context, target records, or other invocation data in instance fields.
 - Declare the expected runtime and deployment shape in `GetRegisteredEvents()`: message, primary entity, pipeline stage, execution mode, handler, filtering attributes, required image aliases, and image attributes.
 - Include optional deployment metadata there when it matters: step description, execution order, and Run in User's Context. Prefer `RegisteredEvent.CallingUser`; when a fixed user is needed, reference a stable alias that maps to a per-environment `systemuserid`.
+- Document fixed Run in User's Context aliases near the registration workflow, not as raw GUIDs in plugin code. The default local map is `%APPDATA%\Ops.Plugins\dataverse-registration-users.json`.
 - Point each registered event at a concise step-oriented handler name, such as `OppPostOpUpdateSync`.
 - Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` instead of raw strings for standard Dataverse values.
 - Use generated early-bound model types from `Ops.Plugins.Model` whenever available. Prefer `Opportunity.EntityLogicalName`, `Opportunity.Fields.*`, and generated option-set enums over raw logical names or integer option values.
+- In infrastructure projects that touch generated tables, use generated entity classes for create/update records and generated `Fields.*` constants for `QueryExpression`/`ColumnSet` plumbing.
 - Convert Dataverse `Target` and images to early-bound types with `ToEntity<T>()`; do not replace input parameters with early-bound entity instances.
 - Throw `InvalidPluginExecutionException` for expected business failures that should be shown as plugin errors.
 
@@ -57,6 +59,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 - Regenerate model code from `Ops.Plugins.Model/builderSettings.json`; do not hand-edit generated entity or option-set files except for intentional cleanup before committing.
 - After regeneration, sync `Ops.Plugins.Model.projitems` with added or removed generated files.
+- Include registration tables in the model when registration automation needs them, so step stage/mode/state/image type values come from generated option-set enums rather than raw integers.
 - Keep generated public-repo models minimal. Remove accidental internal/custom-prefixed columns before committing when this repository should not expose them.
 - Add new entities to `entityNamesFilter` only when the plugin or tests need them.
 
@@ -81,6 +84,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Build and test sequentially on Windows to avoid file locks in `obj` and `bin`.
 - Keep the signing-key decision explicit. The committed `.snk` is convenient for starter/dev/test assembly identity, but production environments may require an organization-controlled private key.
 - `pac plugin push` updates the assembly binary. Step registration details such as stage, mode, filtering attributes, and images remain managed separately unless you automate that process.
+- PAC auth profiles are local convenience state, not durable configuration. If profile tokens expire or the token cache cannot be read, recreate auth with `pac auth create --deviceCode` and reselect the profile before running modelbuilder or plugin push.
 - Step registration automation should be additive by default: create missing `sdkmessageprocessingstep` and image rows for the assembly being deployed, but do not rewrite existing steps unless an explicit update mode is requested.
 - A lightweight registration sync tool should run in dry-run mode by default, show creates/updates/deletes before applying, and support explicit `-Apply` behavior for correcting filtering attributes and image definitions after `pac plugin push`.
 - Rename namespaces only after the starter builds and tests cleanly.

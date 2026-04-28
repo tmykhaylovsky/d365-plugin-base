@@ -7,11 +7,15 @@ Quick commands for this starter solution. Run these from the repository root unl
 ```powershell
 dotnet tool install --global Microsoft.PowerApps.CLI.Tool
 pac auth create --url https://<your-org>.crm.dynamics.com
+pac auth create --url https://<your-org>.crm.dynamics.com --deviceCode --name <short-name>
 pac auth list
 pac auth select --index <n>
 ```
 
 Use `pac auth list` before deploys or model regeneration when you work across multiple environments.
+If PAC reports token-cache, DPAPI, or expired refresh-token errors, create a fresh
+device-code profile and select it. Device-code auth avoids the embedded browser
+and is the most reliable quick repair for stale local PAC profiles.
 
 PAC stores auth profiles under the current Windows user profile. That is the safest
 way to cache interactive environment access locally; do not copy PAC auth profile

@@ -1,8 +1,10 @@
+extern alias PluginAssembly;
+
 using System;
 using Microsoft.Xrm.Sdk.Query;
-using Ops.Plugins;
-using Ops.Plugins.Model;
 using Ops.Plugins.Shared;
+using PluginAssembly::Ops.Plugins;
+using PluginAssembly::Ops.Plugins.Model;
 using Xunit;
 
 // Tests for OpportunityWonPlugin.

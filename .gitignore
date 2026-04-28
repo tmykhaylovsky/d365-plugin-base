@@ -49,6 +49,7 @@ _ReSharper*/
 # AI local workspace
 .claude/
 .codex/
+.mcp.json
 
 # Windows
 Thumbs.db
