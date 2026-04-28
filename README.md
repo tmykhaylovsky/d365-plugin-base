@@ -89,9 +89,11 @@ After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` if ne
 
 ## Signing
 
-`Ops.Plugins/PluginKey.snk` is used by `Ops.Plugins.csproj` via `SignAssembly` and `AssemblyOriginatorKeyFile`. The key is intentionally ignored by git, so a fresh clone will not have it.
+`Ops.Plugins/PluginKey.snk` is used by `Ops.Plugins.csproj` via `SignAssembly` and `AssemblyOriginatorKeyFile`. This starter repo allows that specific key file to be committed so all machines can build assemblies with the same strong-name identity.
 
-On Windows, the first Visual Studio or MSBuild build creates a local `PluginKey.snk` automatically by running `Ops.Plugins/New-PluginSigningKey.ps1`, which uses the Windows SDK `sn.exe` tool. The generated `.snk` is a passwordless strong-name key pair. Replace the generated key with your organization's key if you have a standard signing process.
+On Windows, the first Visual Studio or MSBuild build creates a local `PluginKey.snk` automatically by running `Ops.Plugins/New-PluginSigningKey.ps1`, which uses the Windows SDK `sn.exe` tool. The generated `.snk` is a passwordless strong-name key pair. The helper also ensures `Ops.Plugins.csproj` contains `SignAssembly` and `AssemblyOriginatorKeyFile`.
+
+A public `.snk` is acceptable for a shared starter template or dev/test assembly identity, but it is not a security boundary. Anyone with the private `.snk` can build a different DLL with the same strong name. They still need Dataverse deployment permissions to upload that DLL, but for production environments you may prefer an organization-controlled private key.
 
 You can also create the key explicitly after changing into the plugin project folder:
 
