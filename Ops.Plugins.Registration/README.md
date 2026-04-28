@@ -6,6 +6,22 @@ The tool reads `RegisteredEvent` metadata from `Ops.Plugins.dll`, compares it wi
 
 ## Typical Flow
 
+From the repository root, use the wrapper for the most direct path:
+
+```powershell
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -Apply
+```
+
+Add `-PushAssembly` when you also want to update the matched `pluginassembly`
+binary from the DLL before comparing step metadata:
+
+```powershell
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -PushAssembly -Apply
+```
+
+The lower-level console can still be run directly:
+
 ```powershell
 dotnet build Ops.Plugins/Ops.Plugins.csproj -c Release
 
@@ -61,13 +77,40 @@ You can also pass an explicit map with `--userMap <path>`. Keep this file out of
 
 ## Model Pattern
 
-`Ops.Plugins.Registration` imports `Ops.Plugins.Model` and should use generated early-bound classes for registration tables:
+`Ops.Plugins.Registration` intentionally does not import `Ops.Plugins.Model`.
+The registration console reflects over the deployable plugin DLL, and that DLL
+already contains the generated early-bound model types. Importing the same model
+into the console creates duplicate Dataverse proxy types in the same process.
 
-- Use generated entity classes for create/update rows, such as `PluginAssembly`, `SdkMessageProcessingStep`, and `SdkMessageProcessingStepImage`.
-- Use generated option-set enums for stage, mode, state, supported deployment, and image type.
-- Use generated `Fields.*` constants in `QueryExpression`, `ColumnSet`, and criteria.
-- Keep raw logical strings only where the model does not include the entity, such as the built-in `systemuser` reference used for impersonation.
+Use late-bound SDK entities for registration rows:
+
+- Keep registration table logical names and field names in `RegistrationEntityNames`.
+- Use `Entity`, `EntityReference`, `OptionSetValue`, `QueryExpression`, and `ColumnSet`.
+- Do not compile business early-bound entities such as `Opportunity` into this console.
 
 ## Safety
 
 The sync is intentionally conservative. It creates missing steps/images and updates safe drift fields such as rank, filtering attributes, description, image message property, and image attributes. It reports extras, disabled steps, managed rows, unsecure configuration, and impersonation rather than silently changing or deleting them.
+
+## Image Update Findings
+
+`sdkmessageprocessingstepimage` uses the standard Dataverse `Update` message; there is no separate public save/update image request. The image table and field logical names are:
+
+- Table: `sdkmessageprocessingstepimage`
+- Parent step lookup: `sdkmessageprocessingstepid`
+- Attribute list: `attributes`
+- Alias: `entityalias`
+- Image type: `imagetype`
+- Message property: `messagepropertyname`
+
+When updating an existing image, include the existing parent
+`sdkmessageprocessingstepid` lookup in the update payload along with changed fields
+such as `attributes`. Updating only `attributes` can trigger a generic Dataverse
+500 from `Microsoft.Crm.ObjectModel.SdkMessageProcessingStepImageServiceInternal`
+with a `NullReferenceException`, even though `attributes` is writable. Including
+the parent step lookup preserves the existing `sdkmessageprocessingstepimageid`;
+the tool does not delete/recreate images for normal drift correction.
+
+The root wrapper builds `Ops.Plugins` and `Ops.Plugins.Registration` in `Release`
+by default before syncing. Use `-NoBuild` only when intentionally applying from an
+already-built DLL.

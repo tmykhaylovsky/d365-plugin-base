@@ -29,16 +29,26 @@ namespace Ops.Plugins.Testing.Registration
             Assert.Equal(1, step.Rank);
             Assert.Equal(RegisteredEvent.CallingUser, step.RunInUserContext);
             Assert.Equal("Stamps actual close date when an opportunity is won.", step.Description);
-            Assert.Equal(Opportunity.Fields.StatusCode, step.FilteringAttributes.ToString());
+            Assert.Equal(ExpectedFilteringAttributes(), step.FilteringAttributes.ToString());
             Assert.Equal((int)sdkmessageprocessingstepimage_imagetype.PreImage, preImage.ImageType);
-            Assert.Equal(ExpectedImageAttributes(), preImage.Attributes.ToString());
+            Assert.Equal(ExpectedPreImageAttributes(), preImage.Attributes.ToString());
             Assert.Equal((int)sdkmessageprocessingstepimage_imagetype.PostImage, postImage.ImageType);
-            Assert.Equal(ExpectedImageAttributes(), postImage.Attributes.ToString());
+            Assert.Equal(ExpectedPostImageAttributes(), postImage.Attributes.ToString());
         }
 
-        private static string ExpectedImageAttributes()
+        private static string ExpectedFilteringAttributes()
         {
-            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate }).ToString();
+            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate, Opportunity.Fields.StateCode }).ToString();
+        }
+
+        private static string ExpectedPreImageAttributes()
+        {
+            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate, Opportunity.Fields.ActualValue }).ToString();
+        }
+
+        private static string ExpectedPostImageAttributes()
+        {
+            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate, Opportunity.Fields.BudgetAmount }).ToString();
         }
     }
 }

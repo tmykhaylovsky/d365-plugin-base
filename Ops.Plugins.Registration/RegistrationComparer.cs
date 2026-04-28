@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Ops.Plugins.Model;
 
 namespace Ops.Plugins.Registration
 {
@@ -101,7 +100,7 @@ namespace Ops.Plugins.Registration
 
         private static void AddStepWarnings(List<RegistrationChange> changes, DesiredStep desired, ActualStep actual)
         {
-            if (actual.StateCode != (int)sdkmessageprocessingstep_statecode.Enabled)
+            if (actual.StateCode != 0)
                 changes.Add(Change(RegistrationActionKind.Warning, RegistrationTargetKind.Step, desired, actual, "Existing matching step is disabled; --apply will not enable it."));
             if (actual.IsManaged)
                 changes.Add(Change(RegistrationActionKind.Warning, RegistrationTargetKind.Step, desired, actual, "Existing matching step is managed; Dataverse may reject updates."));

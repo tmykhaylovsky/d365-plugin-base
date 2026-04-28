@@ -70,7 +70,25 @@ pac plugin push `
 
 ## Sync Plugin Step Registration
 
-Run the registration sync tool after `pac plugin push`. Dry-run is the default and performs no writes:
+Run the wrapper from the repository root. Dry-run is the default and performs no writes:
+
+```powershell
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com
+```
+
+Apply after reviewing the dry-run:
+
+```powershell
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com -Apply
+```
+
+Apply and update the matched plugin assembly binary in one command:
+
+```powershell
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com -PushAssembly -Apply
+```
+
+The lower-level console command is also available:
 
 ```powershell
 dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `

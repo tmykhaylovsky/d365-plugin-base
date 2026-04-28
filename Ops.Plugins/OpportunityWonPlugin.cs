@@ -43,7 +43,7 @@ namespace Ops.Plugins
                 OppPostOpUpdateSync,
                 requiredPreImageName: PluginImageNames.PreImage,
                 requiredPostImageName: PluginImageNames.PostImage,
-                filteringAttributes: new[] { Opportunity.Fields.StatusCode },
+                filteringAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
                 preImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
                 postImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
                 runInUserContext: RegisteredEvent.CallingUser,
