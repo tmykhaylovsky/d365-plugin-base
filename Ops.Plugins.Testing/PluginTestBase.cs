@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using FakeXrmEasy;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
+using Ops.Plugins.Shared;
 
 // NuGet: FakeXrmEasy.9 (jordimontana82, MIT license — free for commercial use)
 // Target: .NET Framework 4.6.2
@@ -74,10 +75,10 @@ namespace Ops.Plugins.Testing
                 ctx.InputParameters["Target"] = target;
 
             if (preImage != null)
-                ctx.PreEntityImages["PreImage"] = preImage;
+                ctx.PreEntityImages[PluginImageNames.PreImage] = preImage;
 
             if (postImage != null)
-                ctx.PostEntityImages["PostImage"] = postImage;
+                ctx.PostEntityImages[PluginImageNames.PostImage] = postImage;
 
             return ctx;
         }
@@ -87,7 +88,7 @@ namespace Ops.Plugins.Testing
             Entity  target,
             Entity  postImage        = null,
             Guid?   userId           = null) =>
-            BuildContext("Create", target.LogicalName, target,
+            BuildContext(Messages.Create, target.LogicalName, target,
                 PluginStage.PostOperation, postImage: postImage, userId: userId);
 
         // Shorthand for Update context
@@ -96,7 +97,7 @@ namespace Ops.Plugins.Testing
             Entity  preImage         = null,
             Entity  postImage        = null,
             Guid?   userId           = null) =>
-            BuildContext("Update", target.LogicalName, target,
+            BuildContext(Messages.Update, target.LogicalName, target,
                 PluginStage.PostOperation, preImage, postImage, userId);
 
         // Shorthand for Delete context (Target is an EntityReference)
@@ -106,7 +107,7 @@ namespace Ops.Plugins.Testing
             Entity  preImage         = null,
             Guid?   userId           = null)
         {
-            var ctx = BuildContext("Delete", entityName,
+            var ctx = BuildContext(Messages.Delete, entityName,
                 stage: PluginStage.PreOperation, preImage: preImage, userId: userId);
             ctx.InputParameters["Target"] = new EntityReference(entityName, recordId);
             return ctx;

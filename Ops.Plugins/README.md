@@ -44,3 +44,13 @@ Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
 ## Notes
 
 This project imports source from `Ops.Plugins.Shared` and `Ops.Plugins.Model` through `.projitems` files. Those shared projects do not produce separate DLLs; the deployable output stays one signed assembly.
+
+## Plugin authoring conventions
+
+The canonical guidance lives in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md). Keep this checklist aligned with that file.
+
+- Declare expected runtime shape in `GetRegisteredEvents()` for each plugin: message, primary entity, stage, execution mode, and any required image name.
+- Point each registered event at a meaningfully named handler such as `OppPostOpUpdateSync`; avoid using generic handler names for business logic.
+- Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` for standard Dataverse message names, execution modes, and image aliases.
+- Use generated early-bound model constants such as `Opportunity.EntityLogicalName` and `Opportunity.Fields.*` instead of raw logical-name strings whenever the entity is in `Ops.Plugins.Model`.
+- Keep raw logical-name strings only for generic infrastructure, explicit negative-path tests, or entities not yet generated into the model.

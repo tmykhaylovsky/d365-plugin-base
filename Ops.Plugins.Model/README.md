@@ -2,6 +2,8 @@
 
 This is a [Shared Project](https://learn.microsoft.com/en-us/xamarin/cross-platform/app-fundamentals/shared-projects) (`Ops.Plugins.Model.shproj`). It contains no assembly of its own — consuming projects import `Ops.Plugins.Model.projitems` and the source files are compiled directly into them.
 
+Model generation and early-bound usage conventions are documented in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md).
+
 ## Prerequisites
 
 Install the Power Platform CLI as a .NET global tool if you haven't already:

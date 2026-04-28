@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Ops.Plugins.Model;
 using Ops.Plugins.Shared;
 
@@ -10,7 +11,7 @@ using Ops.Plugins.Shared;
 // PRT Step Registration:
 //   Message:              Update
 //   Primary Entity:       opportunity
-//   Stage:                PostOperation (40) - react after the platform commits
+//   Stage:                PostOperation (40) - react after the core operation, within the transaction
 //   Execution Mode:       Synchronous
 //   Filtering Attributes: statuscode - critical for performance; omitting this fires on every update
 //   Pre-Image:            Name = "PreImage", Attributes = statuscode, actualclosedate
@@ -30,7 +31,18 @@ namespace Ops.Plugins
         public OpportunityWonPlugin(string unsecureConfig, string secureConfig)
             : base(unsecureConfig, secureConfig) { }
 
-        protected override void ExecutePlugin(LocalPluginContext context)
+        protected override IEnumerable<RegisteredEvent> GetRegisteredEvents()
+        {
+            yield return new RegisteredEvent(
+                PluginStage.PostOperation,
+                SdkMessageProcessingStepMode.Synchronous,
+                Messages.Update,
+                Opportunity.EntityLogicalName,
+                OppPostOpUpdateSync,
+                requiredPreImageName: PluginImageNames.PreImage);
+        }
+
+        private void OppPostOpUpdateSync(LocalPluginContext context)
         {
             // Guard 1: only act on statuscode changes (belt + suspenders; PRT filtering handles this too)
             if (!context.HasChangedAttribute(Opportunity.Fields.StatusCode)) return;

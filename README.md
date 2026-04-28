@@ -54,6 +54,10 @@ Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
 | `Ops.Plugins.Model` | Visual Studio shared project for early-bound Dataverse model code. It does not produce a DLL. |
 | `Ops.Plugins.Testing` | xUnit test project using FakeXrmEasy. It references only `Ops.Plugins.csproj` among local projects. |
 
+## Best Practices
+
+See [`BEST_PRACTICES.md`](BEST_PRACTICES.md) for plugin authoring, registration, testing, shared project, model regeneration, logging, and deployment conventions.
+
 ## Registering The Plugin DLL
 
 Initial registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll`, then create plugin steps for concrete plugin classes such as `Ops.Plugins.OpportunityWonPlugin`.
@@ -71,7 +75,7 @@ pac plugin push `
 
 ## Included Starter Plugin
 
-`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at `PostOperation`, filtered on `statuscode`, with a `PreImage` containing `statuscode` and `actualclosedate`.
+`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at synchronous `PostOperation`, filtered on `statuscode`, with a `PreImage` containing `statuscode` and `actualclosedate`.
 
 When the opportunity moves to Won, it stamps `actualclosedate` if that field was not already set.
 

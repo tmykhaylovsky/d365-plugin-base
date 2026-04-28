@@ -14,8 +14,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)FetchXml\FetchXmlBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FetchXml\FilterBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)FetchXml\LinkEntityBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Messages.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PluginImageNames.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginLogger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RegisteredEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SdkMessageProcessingStepMode.cs" />
   </ItemGroup>
 </Project>

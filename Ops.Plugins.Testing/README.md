@@ -26,9 +26,13 @@ This project should reference only `../Ops.Plugins/Ops.Plugins.csproj` among loc
 
 ## Test data conventions
 
+The canonical testing guidance lives in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md). In short:
+
 Prefer the generated early-bound models from `Ops.Plugins.Model` when building Dataverse records in tests:
 
 - Create records with generated entity types such as `Opportunity` so logical names come from the model.
+- Use `Opportunity.EntityLogicalName` for static entity logical-name references, or `target.LogicalName` when the test already has an early-bound instance.
 - Use generated option-set enums such as `opportunity_statuscode.Won` instead of integer status values.
 - Use `Opportunity.Fields.*` constants for column sets and attribute assertions.
-- Keep raw logical-name strings only in generic test infrastructure or when no early-bound model exists yet.
+- Use `Messages.*` and `PluginImageNames.*` constants from `Ops.Plugins.Shared` for standard Dataverse message names and image aliases.
+- Keep raw logical-name strings only in generic test infrastructure, negative-path tests for entities not present in the model, or when no early-bound model exists yet.

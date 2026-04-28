@@ -2,6 +2,7 @@ using System;
 using Microsoft.Xrm.Sdk.Query;
 using Ops.Plugins;
 using Ops.Plugins.Model;
+using Ops.Plugins.Shared;
 using Xunit;
 
 // Tests for OpportunityWonPlugin.
@@ -13,6 +14,7 @@ namespace Ops.Plugins.Testing
     public class OpportunityWonPluginTests : PluginTestBase
     {
         private static readonly Guid OpportunityId = Guid.NewGuid();
+        private const string NonOpportunityEntityLogicalName = "account";
 
         // -----------------------------------------------------------------------
         // Helpers
@@ -115,6 +117,76 @@ namespace Ops.Plugins.Testing
                 Context.ExecutePluginWith<OpportunityWonPlugin>(ctx));
 
             Assert.Null(exception);
+        }
+
+        [Fact]
+        public void WhenPrimaryEntityDoesNotMatch_PluginExitsEarly()
+        {
+            var existing = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = BuildEntity(
+                NonOpportunityEntityLogicalName,
+                OpportunityId,
+                (Opportunity.Fields.StatusCode, opportunity_statuscode.Won));
+            Seed(existing);
+
+            var ctx = BuildContext(
+                Messages.Update,
+                target.LogicalName,
+                target,
+                PluginStage.PostOperation,
+                preImage: existing);
+
+            Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
+
+            Assert.False(RetrieveOpportunity().ActualCloseDate.HasValue);
+        }
+
+        [Fact]
+        public void WhenStageDoesNotMatch_PluginExitsEarly()
+        {
+            var existing = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = MakeTarget(opportunity_statuscode.Won);
+            Seed(existing);
+
+            var ctx = BuildContext(
+                Messages.Update,
+                Opportunity.EntityLogicalName,
+                target,
+                PluginStage.PreOperation,
+                preImage: existing);
+
+            Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
+
+            Assert.False(RetrieveOpportunity().ActualCloseDate.HasValue);
+        }
+
+        [Fact]
+        public void WhenExecutionModeDoesNotMatch_PluginExitsEarly()
+        {
+            var existing = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = MakeTarget(opportunity_statuscode.Won);
+            Seed(existing);
+
+            var ctx = BuildUpdateContext(target, preImage: existing);
+            ctx.Mode = 1;
+
+            Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
+
+            Assert.False(RetrieveOpportunity().ActualCloseDate.HasValue);
+        }
+
+        [Fact]
+        public void WhenPreImageIsMissing_PluginExitsEarly()
+        {
+            var existing = MakePreImage(opportunity_statuscode.InProgress);
+            var target   = MakeTarget(opportunity_statuscode.Won);
+            Seed(existing);
+
+            var ctx = BuildUpdateContext(target);
+
+            Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
+
+            Assert.False(RetrieveOpportunity().ActualCloseDate.HasValue);
         }
 
         private Opportunity RetrieveOpportunity() =>

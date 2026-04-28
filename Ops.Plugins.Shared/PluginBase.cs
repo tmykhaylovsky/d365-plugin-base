@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xrm.Sdk;
 
 namespace Ops.Plugins.Shared
@@ -32,7 +34,36 @@ namespace Ops.Plugins.Shared
 
             try
             {
-                ExecutePlugin(context);
+                var registeredEvents = GetRegisteredEvents().ToList();
+                var registeredEvent = registeredEvents.FirstOrDefault(e => e.Matches(context.ExecutionContext));
+                if (registeredEvent == null && registeredEvents.Count > 0)
+                {
+                    context.Trace(
+                        $"No registered event found | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        TraceLevel.Info);
+                    return;
+                }
+
+                if (registeredEvent != null && !registeredEvent.HasRequiredImages(context.ExecutionContext))
+                {
+                    context.Trace(
+                        $"Registered event missing required pre-image '{registeredEvent.RequiredPreImageName}' | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        TraceLevel.Info);
+                    return;
+                }
+
+                if (registeredEvent != null && !registeredEvent.HasRequiredPostImage(context.ExecutionContext))
+                {
+                    context.Trace(
+                        $"Registered event missing required post-image '{registeredEvent.RequiredPostImageName}' | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        TraceLevel.Info);
+                    return;
+                }
+
+                if (registeredEvent?.Execute != null)
+                    registeredEvent.Execute(context);
+                else
+                    ExecutePlugin(context);
             }
             catch (InvalidPluginExecutionException)
             {
@@ -49,7 +80,16 @@ namespace Ops.Plugins.Shared
             }
         }
 
-        protected abstract void ExecutePlugin(LocalPluginContext context);
+        protected virtual void ExecutePlugin(LocalPluginContext context)
+        {
+            throw new InvalidPluginExecutionException(
+                $"{GetType().Name} did not match a registered event and does not override ExecutePlugin.");
+        }
+
+        protected virtual IEnumerable<RegisteredEvent> GetRegisteredEvents()
+        {
+            return Enumerable.Empty<RegisteredEvent>();
+        }
 
         public sealed class LocalPluginContext
         {
@@ -93,15 +133,15 @@ namespace Ops.Plugins.Shared
 
             // --- Images ---
 
-            public T GetPreImage<T>(string imageName = "PreImage") where T : Entity =>
+            public T GetPreImage<T>(string imageName = PluginImageNames.PreImage) where T : Entity =>
                 ExecutionContext.PreEntityImages.TryGetValue(imageName, out var img) ? img.ToEntity<T>() : null;
 
-            public T GetPostImage<T>(string imageName = "PostImage") where T : Entity =>
+            public T GetPostImage<T>(string imageName = PluginImageNames.PostImage) where T : Entity =>
                 ExecutionContext.PostEntityImages.TryGetValue(imageName, out var img) ? img.ToEntity<T>() : null;
 
             // Returns true if the attribute is present in the target AND its value differs from the pre-image.
             // Returns true when there is no pre-image (first-time set).
-            public bool HasChangedAttribute(string logicalName, string preImageName = "PreImage")
+            public bool HasChangedAttribute(string logicalName, string preImageName = PluginImageNames.PreImage)
             {
                 var target = GetTarget();
                 if (target == null || !target.Contains(logicalName)) return false;

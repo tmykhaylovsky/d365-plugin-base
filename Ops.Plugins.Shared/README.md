@@ -16,6 +16,8 @@ Shared source for Dataverse plugin infrastructure.
 
 `Ops.Plugins/Ops.Plugins.csproj` imports `Ops.Plugins.Shared.projitems`, so these files compile into `Ops.Plugins.dll`.
 
+Shared helper conventions are documented in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md).
+
 ## Testing note
 
 FakeXrmEasy v1 does not support every service type that Dataverse exposes. Optional services, especially `Microsoft.Xrm.Sdk.PluginTelemetry.ILogger`, should be resolved defensively and treated as absent when unsupported.
