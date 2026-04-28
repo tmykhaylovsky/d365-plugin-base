@@ -5,13 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Xrm.Sdk;
+using Ops.Plugins.Model;
 
 namespace Ops.Plugins.Registration
 {
     public sealed class PluginAssemblyInspector
     {
-        private const int PreImage = 0;
-        private const int PostImage = 1;
+        private const sdkmessageprocessingstepimage_imagetype PreImage = sdkmessageprocessingstepimage_imagetype.PreImage;
+        private const sdkmessageprocessingstepimage_imagetype PostImage = sdkmessageprocessingstepimage_imagetype.PostImage;
 
         public DesiredRegistration Inspect(string assemblyPath)
         {
@@ -113,7 +114,7 @@ namespace Ops.Plugins.Registration
             };
         }
 
-        private static void AddImage(List<DesiredImage> images, string pluginTypeName, string messageName, string entityLogicalName, int stage, int mode, object registeredEvent, string aliasProperty, string attributesProperty, int imageType)
+        private static void AddImage(List<DesiredImage> images, string pluginTypeName, string messageName, string entityLogicalName, int stage, int mode, object registeredEvent, string aliasProperty, string attributesProperty, sdkmessageprocessingstepimage_imagetype imageType)
         {
             var alias = GetValue<string>(registeredEvent, aliasProperty);
             if (string.IsNullOrWhiteSpace(alias)) return;
@@ -126,8 +127,8 @@ namespace Ops.Plugins.Registration
                 StepStage = stage,
                 StepMode = mode,
                 Alias = alias,
-                ImageType = imageType,
-                MessagePropertyName = "Target",
+                ImageType = (int)imageType,
+                MessagePropertyName = SdkMessagePropertyNames.Target,
                 Attributes = AttributeList.From(GetValues(registeredEvent, attributesProperty))
             });
         }

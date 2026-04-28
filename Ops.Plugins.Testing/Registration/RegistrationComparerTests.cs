@@ -58,7 +58,7 @@ namespace Ops.Plugins.Testing.Registration
         {
             var desired = Desired();
             var step = MatchingStep();
-            step.Stage = 20;
+            step.Stage = (int)sdkmessageprocessingstep_stage.Preoperation;
             var image = MatchingImage(step, attributes: ExpectedImageAttributes());
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
@@ -72,7 +72,7 @@ namespace Ops.Plugins.Testing.Registration
         {
             var desired = Desired();
             var step = MatchingStep();
-            step.StateCode = 1;
+            step.StateCode = (int)sdkmessageprocessingstep_statecode.Disabled;
             var image = MatchingImage(step, attributes: ExpectedImageAttributes());
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
@@ -93,11 +93,11 @@ namespace Ops.Plugins.Testing.Registration
                 PluginTypeName = PluginTypeName,
                 MessageName = Messages.Update,
                 EntityLogicalName = Opportunity.EntityLogicalName,
-                StepStage = 40,
-                StepMode = 0,
+                StepStage = (int)sdkmessageprocessingstep_stage.Postoperation,
+                StepMode = (int)sdkmessageprocessingstep_mode.Synchronous,
                 Alias = PluginImageNames.PreImage,
-                ImageType = 0,
-                MessagePropertyName = "Target",
+                ImageType = (int)sdkmessageprocessingstepimage_imagetype.PreImage,
+                MessagePropertyName = SdkMessagePropertyNames.Target,
                 Attributes = AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate })
             };
 
@@ -106,8 +106,8 @@ namespace Ops.Plugins.Testing.Registration
                 PluginTypeName = PluginTypeName,
                 MessageName = Messages.Update,
                 EntityLogicalName = Opportunity.EntityLogicalName,
-                Stage = 40,
-                Mode = 0,
+                Stage = (int)sdkmessageprocessingstep_stage.Postoperation,
+                Mode = (int)sdkmessageprocessingstep_mode.Synchronous,
                 Rank = 1,
                 FilteringAttributes = AttributeList.From(new[] { Opportunity.Fields.StatusCode }),
                 Images = new[] { image }
@@ -141,11 +141,11 @@ namespace Ops.Plugins.Testing.Registration
                 PluginTypeId = Guid.NewGuid(),
                 MessageName = message ?? Messages.Update,
                 EntityLogicalName = Opportunity.EntityLogicalName,
-                Stage = 40,
-                Mode = 0,
+                Stage = (int)sdkmessageprocessingstep_stage.Postoperation,
+                Mode = (int)sdkmessageprocessingstep_mode.Synchronous,
                 Rank = 1,
                 FilteringAttributes = AttributeList.Parse(filteringAttributes ?? Opportunity.Fields.StatusCode),
-                StateCode = 0
+                StateCode = (int)sdkmessageprocessingstep_statecode.Enabled
             };
         }
 
@@ -157,8 +157,8 @@ namespace Ops.Plugins.Testing.Registration
                 StepId = step.Id,
                 StepKey = step.Key,
                 Alias = PluginImageNames.PreImage,
-                ImageType = 0,
-                MessagePropertyName = "Target",
+                ImageType = (int)sdkmessageprocessingstepimage_imagetype.PreImage,
+                MessagePropertyName = SdkMessagePropertyNames.Target,
                 Attributes = AttributeList.Parse(attributes)
             };
         }

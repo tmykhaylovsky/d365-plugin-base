@@ -12,7 +12,14 @@
     <Compile Include="$(MSBuildThisFileDirectory)CrmServiceContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)EntityOptionSetEnum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Entities\opportunity.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\pluginassembly.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\plugintype.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\sdkmessage.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\sdkmessagefilter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\sdkmessageprocessingstep.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Entities\sdkmessageprocessingstepimage.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OptionSets\budgetstatus.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)OptionSets\componentstate.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OptionSets\initialcommunication.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OptionSets\msdyn_opportunitygradeoptset.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OptionSets\msdyn_opportunityscoretrendoptset.cs" />

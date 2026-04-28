@@ -14,24 +14,24 @@ namespace Ops.Plugins.Model
 	
 	
 	/// <summary>
-	/// The sales process stage that this entity is in.
+	/// The state of this component.
 	/// </summary>
 	[System.Runtime.Serialization.DataContractAttribute()]
 	[System.CodeDom.Compiler.GeneratedCodeAttribute("Dataverse Model Builder", "2.0.0.6")]
-	public enum opportunity_salesstage
+	public enum componentstate
 	{
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Qualify = 0,
+		Published = 0,
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Develop = 1,
+		Unpublished = 1,
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Propose = 2,
+		Deleted = 2,
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Close = 3,
+		DeletedUnpublished = 3,
 	}
 }
 #pragma warning restore CS1591

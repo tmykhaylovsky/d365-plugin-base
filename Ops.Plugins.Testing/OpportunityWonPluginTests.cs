@@ -170,7 +170,7 @@ namespace Ops.Plugins.Testing
             Seed(existing);
 
             var ctx = BuildUpdateContext(target, preImage: existing, postImage: target);
-            ctx.Mode = 1;
+            ctx.Mode = (int)sdkmessageprocessingstep_mode.Asynchronous;
 
             Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
 

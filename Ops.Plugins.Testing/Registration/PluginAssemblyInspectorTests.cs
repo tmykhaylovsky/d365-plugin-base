@@ -28,9 +28,9 @@ namespace Ops.Plugins.Testing.Registration
             Assert.Equal(RegisteredEvent.CallingUser, step.RunInUserContext);
             Assert.Equal("Stamps actual close date when an opportunity is won.", step.Description);
             Assert.Equal(Opportunity.Fields.StatusCode, step.FilteringAttributes.ToString());
-            Assert.Equal(0, preImage.ImageType);
+            Assert.Equal((int)sdkmessageprocessingstepimage_imagetype.PreImage, preImage.ImageType);
             Assert.Equal(ExpectedImageAttributes(), preImage.Attributes.ToString());
-            Assert.Equal(1, postImage.ImageType);
+            Assert.Equal((int)sdkmessageprocessingstepimage_imagetype.PostImage, postImage.ImageType);
             Assert.Equal(ExpectedImageAttributes(), postImage.Attributes.ToString());
         }
 
