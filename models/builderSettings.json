@@ -1,0 +1,18 @@
+﻿{
+  "suppressINotifyPattern": true,
+  "suppressGeneratedCodeAttribute": false,
+  "language": "CS",
+  "namespace": "Ops.Crm.Models",
+  "serviceContextName": "CrmServiceContext",
+  "generateSdkMessages": false,
+  "generateGlobalOptionSets": false,
+  "emitFieldsClasses": true,
+  "entityTypesFolder": "Entities",
+  "messagesTypesFolder": "Messages",
+  "optionSetsTypesFolder": "OptionSets",
+  "entityNamesFilter": [
+    "opportunity"
+  ],
+  "emitEntityETC": false,
+  "emitVirtualAttributes": false
+}

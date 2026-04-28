@@ -65,8 +65,11 @@ namespace Ops.Crm.Shared
             public string UnsecureConfig { get; }
             public string SecureConfig { get; }
 
+            private readonly string _pluginName;
+
             public LocalPluginContext(IServiceProvider serviceProvider, string pluginName, string unsecureConfig, string secureConfig)
             {
+                _pluginName = pluginName;
                 ExecutionContext = serviceProvider.GetService(typeof(IPluginExecutionContext)) as IPluginExecutionContext
                     ?? throw new InvalidPluginExecutionException("IPluginExecutionContext not available.");
 
@@ -131,6 +134,17 @@ namespace Ops.Crm.Shared
 
             public void SetOutputParameter(string name, object value) =>
                 ExecutionContext.OutputParameters[name] = value;
+
+            // --- Recursive execution guard ---
+            // Returns true on the second (or later) call for the same plugin+message+stage+entity+mode
+            // within the same pipeline. Call at the top of ExecutePlugin and return immediately if true.
+            public bool IsRecursiveExecution()
+            {
+                var key = $"{_pluginName}|{ExecutionContext.MessageName}|{ExecutionContext.Stage}|{ExecutionContext.PrimaryEntityId}|{ExecutionContext.Mode}";
+                if (ExecutionContext.SharedVariables.TryGetValue(key, out var v) && v is bool b && b) return true;
+                ExecutionContext.SharedVariables[key] = true;
+                return false;
+            }
 
             // --- Stage / message guards ---
 

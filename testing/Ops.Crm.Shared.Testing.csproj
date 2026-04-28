@@ -8,7 +8,10 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <Import Project="..\src\Ops.Crm.Shared.projitems" Label="Shared" />
+
   <ItemGroup>
+    <PackageReference Include="Microsoft.CrmSdk.CoreAssemblies" Version="9.0.2.59" />
     <!-- FakeXrmEasy V1 — MIT license, free commercial use, archived June 2024 (stable) -->
     <!-- Targets CrmSdk 9.x. Use FakeXrmEasy (no suffix) for older SDK versions.      -->
     <PackageReference Include="FakeXrmEasy.9" Version="1.58.1" />
@@ -19,10 +22,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk"      Version="17.9.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\src\Ops.Crm.Shared.csproj" />
   </ItemGroup>
 
 </Project>

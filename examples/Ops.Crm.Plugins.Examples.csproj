@@ -8,6 +8,8 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <Import Project="..\models\Ops.Crm.Models.projitems" Label="Shared" />
+
   <ItemGroup>
     <PackageReference Include="FakeXrmEasy.9" Version="1.58.1" />
     <PackageReference Include="xunit"                       Version="2.6.6" />
@@ -19,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Ops.Crm.Shared.csproj" />
     <ProjectReference Include="..\testing\Ops.Crm.Shared.Testing.csproj" />
   </ItemGroup>
 
