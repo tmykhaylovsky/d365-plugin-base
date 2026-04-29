@@ -51,6 +51,9 @@ _ReSharper*/
 .codex/
 .mcp.json
 
+# Repo-local environment configuration
+.local/
+
 # Windows
 Thumbs.db
 Desktop.ini

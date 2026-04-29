@@ -32,18 +32,8 @@ Ignored repo-local notes can live under `.claude/`, but keep only URLs, command
 templates, and environment variable names there. Do not store passwords, client
 secrets, tokens, or literal connection strings in markdown.
 
-For fixed step impersonation, prefer a local alias-to-`systemuserid` map:
-
-```json
-{
-  "Plugin Service User": "00000000-0000-0000-0000-000000000000"
-}
-```
-
-Pass it with `--userMap <path>`, or let the tool use the default per-user path
-`%APPDATA%\Ops.Plugins\dataverse-registration-users.json`. Plugin code should use
-`RegisteredEvent.CallingUser` for the default run-as behavior, or a stable alias
-that resolves to a per-environment `systemuserid`.
+For fixed step impersonation, configure the repo-local run-as user map described
+in [`Ops.Plugins.Registration/README.md`](Ops.Plugins.Registration/README.md#run-in-users-context).
 
 ## Build Deployable Assembly
 
@@ -120,7 +110,11 @@ dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj --
   --apply
 ```
 
-The tool creates missing steps/images and corrects mismatched rank, filtering attributes, image message property, and image attributes. Existing-step matching uses plug-in type, message, primary entity, stage, and mode. Extra steps/images are reported only; the tool does not delete, disable, enable, change impersonation, or change secure/unsecure configuration.
+The tool creates missing steps/images and corrects mismatched rank, filtering
+attributes, step description, Run in User's Context, image message property, and
+image attributes. Existing-step matching uses plug-in type, message, primary
+entity, stage, and mode. Extra steps/images are reported only; the tool does not
+delete, disable, enable, or change secure/unsecure configuration.
 
 Use `--pushAssembly` when PAC auth is unavailable or you want one command to update
 the matched `pluginassembly` binary before comparing step metadata. It updates the
@@ -133,9 +127,8 @@ images, and scopes new step creation to the matched plugin assembly. If a matchi
 step is disabled, it is treated as an existing step and reported as a warning rather
 than duplicated.
 
-Step metadata can also include an optional description and Run in User's Context.
-Calling User is represented by a null `impersonatinguserid`; fixed users should be
-resolved from `systemuserid` GUIDs rather than display names.
+Step metadata can also include an optional description and Run in User's Context;
+see [`Ops.Plugins.Registration/README.md`](Ops.Plugins.Registration/README.md#run-in-users-context).
 
 ## Regenerate Early-Bound Model
 

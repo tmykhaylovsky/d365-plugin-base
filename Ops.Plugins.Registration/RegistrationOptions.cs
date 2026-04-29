@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
+using System.Web.Script.Serialization;
 
 namespace Ops.Plugins.Registration
 {
@@ -18,6 +20,7 @@ namespace Ops.Plugins.Registration
         public bool Verbose { get; set; }
         public bool Help { get; set; }
         public string UserMapPath { get; set; }
+        public IReadOnlyDictionary<string, RunInUserContextReference> UserReferences { get; private set; } = new Dictionary<string, RunInUserContextReference>(StringComparer.OrdinalIgnoreCase);
         public IReadOnlyDictionary<string, Guid> UserAliases { get; private set; } = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
 
         public static RegistrationOptions Parse(string[] args)
@@ -88,6 +91,30 @@ namespace Ops.Plugins.Registration
                 throw new ArgumentException("Provide --connectionString <value-or-env-var> or --environment <url>.");
         }
 
+        public void ValidateRunInUserContexts(DesiredRegistration desired)
+        {
+            var missing = desired.PluginTypes
+                .SelectMany(t => t.Steps)
+                .Select(s => s.RunInUserContext)
+                .Where(IsFixedLabel)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Where(label =>
+                {
+                    RunInUserContextReference reference;
+                    return UserReferences == null
+                        || !UserReferences.TryGetValue(label, out reference)
+                        || !reference.SystemUserId.HasValue;
+                })
+                .ToArray();
+
+            if (missing.Length == 0) return;
+
+            throw new InvalidOperationException(
+                "Run in User's Context label(s) missing systemuserid in " + GetResolvedUserMapPath() + ": " +
+                string.Join(", ", missing) +
+                ". Add them to the repo-local run-as user config or pass --userMap <path>.");
+        }
+
         private static string RequireValue(string[] args, ref int index, string optionName)
         {
             if (index + 1 >= args.Length || args[index + 1].StartsWith("--", StringComparison.Ordinal))
@@ -115,32 +142,123 @@ namespace Ops.Plugins.Registration
 
         private void LoadUserAliases()
         {
-            var path = string.IsNullOrWhiteSpace(UserMapPath) ? GetDefaultUserMapPath() : UserMapPath;
+            var path = GetResolvedUserMapPath();
 
             if (!File.Exists(path))
             {
+                UserReferences = new Dictionary<string, RunInUserContextReference>(StringComparer.OrdinalIgnoreCase);
                 UserAliases = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
                 return;
             }
 
-            var aliases = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
             var content = File.ReadAllText(path);
+            if (LooksLikeArray(content))
+                LoadUserReferencesFromArray(content);
+            else
+                LoadLegacyAliasMap(content);
+        }
+
+        private void LoadUserReferencesFromArray(string content)
+        {
+            var aliases = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            var references = new Dictionary<string, RunInUserContextReference>(StringComparer.OrdinalIgnoreCase);
+            var serializer = new JavaScriptSerializer();
+            var rows = serializer.Deserialize<List<Dictionary<string, object>>>(content);
+
+            foreach (var row in rows ?? new List<Dictionary<string, object>>())
+            {
+                var label = GetString(row, "label");
+                if (string.IsNullOrWhiteSpace(label))
+                    throw new ArgumentException("Run-as user config entries must include a non-empty label.");
+
+                var rawId = GetString(row, "systemuserid");
+                Guid id;
+                Guid? userId = null;
+                if (!string.IsNullOrWhiteSpace(rawId))
+                {
+                    if (!Guid.TryParse(rawId, out id))
+                        throw new ArgumentException($"Run-as user config value for '{label}' must be a systemuserid GUID or null.");
+                    if (id == Guid.Empty)
+                        throw new ArgumentException($"Run-as user config value for '{label}' must be a real systemuserid GUID, not 00000000-0000-0000-0000-000000000000.");
+                    userId = id;
+                    aliases[label] = id;
+                }
+
+                references[label] = new RunInUserContextReference
+                {
+                    Label = label.Trim(),
+                    SystemUserId = userId,
+                    FullName = GetString(row, "fullname")
+                };
+            }
+
+            UserReferences = references;
+            UserAliases = aliases;
+        }
+
+        private void LoadLegacyAliasMap(string content)
+        {
+            var aliases = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            var references = new Dictionary<string, RunInUserContextReference>(StringComparer.OrdinalIgnoreCase);
             foreach (Match match in Regex.Matches(content, "\"([^\"]+)\"\\s*:\\s*\"([^\"]+)\""))
             {
                 Guid id;
                 if (!Guid.TryParse(match.Groups[2].Value, out id))
                     throw new ArgumentException($"User map value for '{match.Groups[1].Value}' must be a systemuserid GUID.");
+                if (id == Guid.Empty)
+                    throw new ArgumentException($"User map value for '{match.Groups[1].Value}' must be a real systemuserid GUID, not 00000000-0000-0000-0000-000000000000.");
 
-                aliases[match.Groups[1].Value] = id;
+                var label = match.Groups[1].Value;
+                aliases[label] = id;
+                references[label] = new RunInUserContextReference { Label = label, SystemUserId = id };
             }
 
+            UserReferences = references;
             UserAliases = aliases;
         }
 
         public static string GetDefaultUserMapPath()
         {
-            var root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            return Path.Combine(root, "Ops.Plugins", "dataverse-registration-users.json");
+            return Path.Combine(FindRepoRoot(Environment.CurrentDirectory), ".local", "run-in-user-context.json");
+        }
+
+        private string GetResolvedUserMapPath()
+        {
+            return string.IsNullOrWhiteSpace(UserMapPath) ? GetDefaultUserMapPath() : Path.GetFullPath(UserMapPath);
+        }
+
+        private static string FindRepoRoot(string start)
+        {
+            var directory = new DirectoryInfo(Path.GetFullPath(start));
+            while (directory != null)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "Ops.Plugins.slnx")))
+                    return directory.FullName;
+
+                directory = directory.Parent;
+            }
+
+            return Path.GetFullPath(start);
+        }
+
+        private static bool LooksLikeArray(string content)
+        {
+            return !string.IsNullOrWhiteSpace(content) && content.TrimStart().StartsWith("[", StringComparison.Ordinal);
+        }
+
+        private static string GetString(IReadOnlyDictionary<string, object> row, string name)
+        {
+            object value;
+            return row != null && row.TryGetValue(name, out value) ? value?.ToString()?.Trim() : null;
+        }
+
+        private static bool IsFixedLabel(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            if (string.Equals(value, "Calling User", StringComparison.OrdinalIgnoreCase)) return false;
+
+            Guid id;
+            return !Guid.TryParse(value, out id);
         }
     }
 }

@@ -439,7 +439,7 @@ namespace Ops.Plugins.Registration
             if (Guid.TryParse(value, out id)) return id;
             if (_optionsUserAliases != null && _optionsUserAliases.TryGetValue(value, out id)) return id;
 
-            throw new InvalidOperationException($"Run in User's Context '{value}' was not found. Use 'Calling User', a systemuserid GUID, or an alias in --userMap.");
+            throw new InvalidOperationException($"Run in User's Context '{value}' was not found. Use 'Calling User', a systemuserid GUID, or a label in the run-as user config.");
         }
 
         private static string PublicKeyTokenToString(byte[] token)

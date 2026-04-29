@@ -18,6 +18,7 @@ namespace Ops.Plugins.Registration
         public int Run(RegistrationOptions options)
         {
             var desired = _inspector.Inspect(options.AssemblyPath);
+            options.ValidateRunInUserContexts(desired);
             var actual = _repository.Load(desired, options);
             if (options.PushAssembly)
             {

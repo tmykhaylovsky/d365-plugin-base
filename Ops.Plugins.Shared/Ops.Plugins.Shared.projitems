@@ -21,6 +21,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)PluginExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)PluginLogger.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)RegisteredEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)RunInUserContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SdkMessageProcessingStepMode.cs" />
   </ItemGroup>
 </Project>

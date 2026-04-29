@@ -6,6 +6,7 @@ param(
     [string] $AssemblyName,
     [Guid] $PluginAssemblyId,
     [string] $Assembly = "Ops.Plugins/bin/Release/net462/Ops.Plugins.dll",
+    [string] $UserMap,
     [switch] $NoBuild,
     [switch] $VerboseOutput,
     [switch] $Help
@@ -47,6 +48,11 @@ function Write-ApplyCommand {
         $command += (Format-PowerShellArgument $Assembly)
     }
 
+    if (-not [string]::IsNullOrWhiteSpace($UserMap)) {
+        $command += "-UserMap"
+        $command += (Format-PowerShellArgument $UserMap)
+    }
+
     if ($PushAssembly) {
         $command += "-PushAssembly"
     }
@@ -74,6 +80,7 @@ if ($Help) {
     Write-Host "  - Builds Ops.Plugins in Release unless -NoBuild is passed."
     Write-Host "  - Dry-runs unless -Apply is passed."
     Write-Host "  - Finds the pluginassembly by DLL assembly name unless -PluginAssemblyId or -AssemblyName is passed."
+    Write-Host "  - Resolves fixed Run in User's Context labels from .local\run-in-user-context.json unless -UserMap is passed."
     exit 0
 }
 
@@ -111,6 +118,10 @@ try {
 
     if (-not [string]::IsNullOrWhiteSpace($AssemblyName)) {
         $appArgs += @("--assemblyName", $AssemblyName)
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($UserMap)) {
+        $appArgs += @("--userMap", $UserMap)
     }
 
     if ($PushAssembly) {

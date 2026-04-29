@@ -46,7 +46,7 @@ namespace Ops.Plugins
                 filteringAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
                 preImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
                 postImageAttributes: new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate },
-                runInUserContext: RegisteredEvent.CallingUser,
+                runInUserContext: RunInUserContext.CallingUser,
                 stepDescription: "Stamps actual close date when an opportunity is won.");
         }
 

@@ -86,7 +86,7 @@ namespace Ops.Plugins.Registration
             if (!desired.FilteringAttributes.SetEquals(actual.FilteringAttributes))
                 diffs.Add($"filteringattributes: \"{actual.FilteringAttributes}\" -> \"{desired.FilteringAttributes}\"");
             if (!SameRunInUserContext(desired.RunInUserContext, actual.ImpersonatingUserId, options))
-                diffs.Add($"run in user's context: \"{RunInUserLabel(actual.ImpersonatingUserId)}\" -> \"{RunInUserLabel(desired.RunInUserContext)}\"");
+                diffs.Add($"run in user's context: \"{RunInUserLabel(actual.ImpersonatingUserId)}\" -> \"{RunInUserLabel(desired.RunInUserContext, options)}\"");
             if (!string.IsNullOrWhiteSpace(desired.Description) && !string.Equals(desired.Description, actual.Description, StringComparison.Ordinal))
                 diffs.Add($"description: \"{actual.Description}\" -> \"{desired.Description}\"");
 
@@ -127,8 +127,14 @@ namespace Ops.Plugins.Registration
             return actual == null ? "Calling User" : actual.Id.ToString("D");
         }
 
-        private static string RunInUserLabel(string desired)
+        private static string RunInUserLabel(string desired, RegistrationOptions options)
         {
+            RunInUserContextReference reference;
+            if (!string.IsNullOrWhiteSpace(desired)
+                && options.UserReferences != null
+                && options.UserReferences.TryGetValue(desired, out reference))
+                return reference.DisplayName;
+
             return string.IsNullOrWhiteSpace(desired) ? "Calling User" : desired;
         }
 

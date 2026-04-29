@@ -40,7 +40,7 @@ namespace Ops.Plugins.Registration
             Console.WriteLine("  --assemblyName <name>          Fallback pluginassembly name lookup.");
             Console.WriteLine("  --environment <url>            Dataverse URL for interactive OAuth connection.");
             Console.WriteLine("  --connectionString <value/env> Explicit connection string or environment variable name.");
-            Console.WriteLine("  --userMap <path>               JSON alias-to-systemuserid map. Defaults to " + RegistrationOptions.GetDefaultUserMapPath() + ".");
+            Console.WriteLine("  --userMap <path>               Run-as user JSON. Defaults to " + RegistrationOptions.GetDefaultUserMapPath() + ".");
             Console.WriteLine("  --pushAssembly                 Update matched pluginassembly content from the DLL before comparing steps.");
             Console.WriteLine("  --apply                        Create/update missing or drifted registration rows.");
             Console.WriteLine("  --includeDisabled              Include disabled steps in comparison without enabling them.");

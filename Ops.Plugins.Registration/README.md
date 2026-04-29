@@ -53,27 +53,65 @@ Device-code auth avoids the embedded-browser path and is usually the least fussy
 
 ## Run In User's Context
 
-Plugin code should keep `RegisteredEvent.CallingUser` unless the step must run as a fixed Dataverse user. For a fixed user, put a stable alias in `runInUserContext`:
+Plugin code should keep `RunInUserContext.CallingUser` unless the step must run
+as a fixed Dataverse user. For a fixed user, use one of the shared labels:
 
 ```csharp
-runInUserContext: "Plugin Service User"
+runInUserContext: RunInUserContext.SystemAdmin
 ```
 
-Then map that alias to a per-environment `systemuserid` in the default local file:
+Then map that label to a per-environment `systemuserid` in the default ignored
+repo-local file:
 
 ```text
-%APPDATA%\Ops.Plugins\dataverse-registration-users.json
+.local\run-in-user-context.json
 ```
 
-Example:
+The committed template lives at:
+
+```text
+Ops.Plugins.Registration\run-in-user-context.template.json
+```
+
+Example local file:
 
 ```json
-{
-  "Plugin Service User": "00000000-0000-0000-0000-000000000000"
-}
+[
+  {
+    "label": "Calling User",
+    "systemuserid": null,
+    "fullname": "Calling User"
+  },
+  {
+    "label": "System Admin",
+    "systemuserid": "656dc3f6-7b48-ee11-be6d-000d3a1f08bb",
+    "fullname": "# crm-prod-dataenrichment"
+  }
+]
 ```
 
-You can also pass an explicit map with `--userMap <path>`. Keep this file out of source control; `systemuserid` values are environment-specific.
+You can create or update the local file without opening it directly:
+
+```powershell
+.\Scripts\Set-RunInUserContext.ps1 `
+  -Label "System Admin" `
+  -SystemUserId 656dc3f6-7b48-ee11-be6d-000d3a1f08bb `
+  -FullName "# crm-prod-dataenrichment"
+```
+
+Or set the predefined labels in one command:
+
+```powershell
+.\Scripts\Set-RunInUserContext.ps1 `
+  -SystemAdminId 656dc3f6-7b48-ee11-be6d-000d3a1f08bb `
+  -SystemAdminFullName "# crm-prod-dataenrichment"
+```
+
+You can also pass an explicit map with `--userMap <path>`. Keep the local file
+out of source control; `systemuserid` values are environment-specific. The
+committed template should stay in source control. The sync tool rejects fixed
+labels from plugin code when they are missing from the local run-as user config
+or do not have a real `systemuserid`.
 
 ## Model Pattern
 
@@ -90,7 +128,11 @@ Use late-bound SDK entities for registration rows:
 
 ## Safety
 
-The sync is intentionally conservative. It creates missing steps/images and updates safe drift fields such as rank, filtering attributes, description, image message property, and image attributes. It reports extras, disabled steps, managed rows, unsecure configuration, and impersonation rather than silently changing or deleting them.
+The sync is intentionally conservative. It creates missing steps/images and
+updates safe drift fields such as rank, filtering attributes, description, Run in
+User's Context, image message property, and image attributes. It reports extras,
+disabled steps, managed rows, and unsecure configuration rather than silently
+changing or deleting them.
 
 ## Image Update Findings
 

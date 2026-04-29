@@ -71,10 +71,8 @@ Initial assembly registration still happens in the Plugin Registration Tool. Reg
 Local environment access should be cached through PAC auth profiles or user
 environment variables. `.claude/` is ignored and is fine for local URLs and command
 templates, but keep secrets and literal connection strings out of repo files.
-Fixed Run in User's Context values should use a per-environment alias in plugin
-code, mapped to `systemuserid` in
-`%APPDATA%\Ops.Plugins\dataverse-registration-users.json` or an explicit
-`--userMap` file, not a display name or source-controlled GUID.
+For fixed Run in User's Context setup, see
+[`Ops.Plugins.Registration/README.md`](Ops.Plugins.Registration/README.md#run-in-users-context).
 
 ## Automating Step Registration
 
