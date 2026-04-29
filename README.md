@@ -66,7 +66,7 @@ See [`BEST_PRACTICES.md`](BEST_PRACTICES.md) for plugin authoring, registration,
 
 ## Deploying The Plugin DLL
 
-Initial assembly registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll` once so Dataverse has the plugin assembly and plug-in type rows. After that, use `pac plugin push` or `Ops.Plugins.Registration --pushAssembly` to update the existing assembly binary, then run `Ops.Plugins.Registration` to dry-run or apply step/image registration from code metadata. See [`PAC_CLI.md`](PAC_CLI.md) for the exact commands.
+Initial assembly registration still happens in the Plugin Registration Tool. Register `Ops.Plugins.dll` once so Dataverse has the plugin assembly row. After that, `Scripts\Sync-PluginRegistration.ps1 -Apply` uploads the rebuilt assembly binary before it compares and applies step/image registration from code metadata. See [`PAC_CLI.md`](PAC_CLI.md) for the exact commands.
 
 Local environment access should be cached through PAC auth profiles or user
 environment variables. `.claude/` is ignored and is fine for local URLs and command

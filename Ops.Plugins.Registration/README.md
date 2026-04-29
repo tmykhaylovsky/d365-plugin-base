@@ -15,30 +15,21 @@ From the repository root, use the wrapper for the most direct path:
 .\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -Apply
 ```
 
-Add `-PushAssembly` when you also want to update the matched `pluginassembly`
-binary from the DLL before comparing step metadata:
+The dry-run command is read-only. The `-Apply` command builds the plugin, uploads
+the matched `pluginassembly` binary from the DLL, reloads Dataverse registration
+state, then creates or updates step/image metadata.
+
+Use `-PushAssembly` with a dry-run when you want to upload first, then inspect the
+resulting comparison without applying step/image changes:
 
 ```powershell
-.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -PushAssembly -Apply
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -PushAssembly
 ```
 
-In `-Apply` mode, the tool automatically pushes the assembly when the only
-blocking issue is that Dataverse has not registered a plug-in type that exists in
-the current DLL. The push still performs the stale-type preflight described below.
-
-Use `-PushAssembly` when the `pluginassembly` row already exists but Dataverse
-still shows older plug-in types under it. For example, if the assembly is
-`Ops.Plugins` but the only registered type is `Ops.Plugins.OpportunityWonPlugin`
-and the current DLL now contains a different plug-in class, the assembly binary
-must be pushed before the sync can create/update steps for the new type. After
-the push, old steps/images are reported as extras; the tool does not delete them.
-
-If Dataverse has registered plug-in types that are missing from the current DLL,
-the tool stops before pushing assembly content and lists the stale type plus its
-dependent steps/images. Review and retire those registrations manually in
-Dataverse, then rerun the sync. This avoids silently deleting production behavior
-or leaving Dataverse with steps that point to a class no longer present in the
-assembly.
+If the `pluginassembly` row already exists but Dataverse still shows older plug-in
+types under it, `-Apply` uploads the current DLL before the sync compares or
+creates steps for the current types. After the upload, old steps/images are
+reported as extras; the tool does not delete them.
 
 The lower-level console can still be run directly:
 
@@ -51,7 +42,8 @@ dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj --
   --connectionString DATAVERSE_CONNECTION
 ```
 
-Add `--apply` after reviewing the dry-run. Add `--pushAssembly` when you also want to update the matched `pluginassembly` binary from the DLL before comparing step metadata.
+Add `--apply` after reviewing the dry-run. Apply uploads the matched
+`pluginassembly` binary from the DLL before comparing step metadata.
 
 ## Authentication
 
@@ -154,9 +146,8 @@ Run in User's Context, image message property, and image attributes. It reports 
 disabled steps, managed rows, and unsecure configuration rather than silently
 changing or deleting them.
 
-`-PushAssembly` also performs a preflight check for stale registered plug-in
-types. If an existing type is no longer present in the DLL, the push is blocked
-and the dependent step/image inventory is printed for manual review.
+Assembly upload happens before apply-mode comparison so step registration is
+based on the DLL that was just built.
 
 ## Image Update Findings
 

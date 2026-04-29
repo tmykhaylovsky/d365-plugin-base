@@ -72,25 +72,19 @@ Apply after reviewing the dry-run:
 .\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com -Apply
 ```
 
-Apply and update the matched plugin assembly binary in one command:
+`-Apply` builds the plugin, uploads the matched plugin assembly binary, reloads
+Dataverse registration state, then creates or updates step/image metadata.
+
+Upload the matched plugin assembly binary and then inspect a dry-run plan:
 
 ```powershell
-.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com -PushAssembly -Apply
+.\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com -PushAssembly
 ```
 
-In `-Apply` mode, the sync can automatically push the assembly when the only
-blocking issue is a plug-in type that exists in the current DLL but is not yet
-registered in Dataverse.
-
-Use `-PushAssembly` when Dataverse already has the `pluginassembly` row but its
-registered plug-in types are from an older DLL. The sync will push the current
-DLL first, then compare step/image metadata. Old steps/images are reported as
-extras for manual cleanup; they are not deleted automatically.
-
-If an existing registered plug-in type is missing from the current DLL, the sync
-stops before uploading the assembly and prints the stale type plus dependent
-step/image counts. Review and retire those Dataverse registrations manually, then
-rerun the command.
+If Dataverse already has the `pluginassembly` row but its registered plug-in
+types are from an older DLL, apply uploads the current DLL first, then compares
+step/image metadata. Old steps/images are reported as extras for manual cleanup;
+they are not deleted automatically.
 
 The lower-level console command is also available:
 
@@ -120,7 +114,6 @@ dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj --
   --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
   --pluginAssemblyId <pluginassembly-guid> `
   --connectionString DATAVERSE_CONNECTION `
-  --pushAssembly `
   --apply
 ```
 
@@ -130,11 +123,10 @@ image attributes. Existing-step matching uses plug-in type, message, primary
 entity, stage, and mode. Extra steps/images are reported only; the tool does not
 delete, disable, enable, or change secure/unsecure configuration.
 
-Use `--pushAssembly` when PAC auth is unavailable or you want one command to update
-the matched `pluginassembly` binary before comparing step metadata. It updates the
-assembly content, version, public key token, and culture on the existing assembly
-row; initial assembly registration still belongs in PRT or an explicit deployment
-process.
+Apply updates the matched `pluginassembly` binary before comparing step metadata.
+It updates the assembly content, version, public key token, and culture on the
+existing assembly row; initial assembly registration still belongs in PRT or an
+explicit deployment process.
 
 The tool validates declared entity logical names before apply, creates steps before
 images, and scopes new step creation to the matched plugin assembly. If a matching

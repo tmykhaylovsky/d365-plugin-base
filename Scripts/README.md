@@ -8,7 +8,7 @@ Repository setup helpers for cloning this starter into a client-specific plugin 
 | `New-PluginSigningKey.ps1` | Creates or verifies the plugin strong-name key and ensures the plugin project has signing properties. `Ops.Plugins.csproj` also calls this script automatically when `PluginKey.snk` is missing. |
 | `Set-RunInUserContext.ps1` | Creates or updates the ignored repo-local run-as user config used by plugin registration sync. |
 | `Update-EarlyBoundModel.ps1` | Runs `pac modelbuilder build` from `Ops.Plugins.Model/builderSettings.json` and syncs `Ops.Plugins.Model.projitems`. |
-| `Sync-PluginRegistration.ps1` | Builds the plugin and syncs Dataverse plugin steps/images from code metadata. Dry-run is the default; add `-Apply` to write changes. |
+| `Sync-PluginRegistration.ps1` | Builds the plugin and syncs Dataverse plugin steps/images from code metadata. Dry-run is the default; add `-Apply` to upload the assembly and write step/image changes. |
 
 Power Platform CLI commands for authentication and deployment are in [`../PAC_CLI.md`](../PAC_CLI.md).
 Run-as user setup is documented in [`../Ops.Plugins.Registration/README.md`](../Ops.Plugins.Registration/README.md#run-in-users-context).
