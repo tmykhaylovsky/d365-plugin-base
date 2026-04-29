@@ -7,7 +7,7 @@ Deployable Dataverse plugin assembly project.
 | Item | Purpose |
 |------|---------|
 | `Ops.Plugins.csproj` | SDK-style `net462` class library that emits `Ops.Plugins.dll`. |
-| `OpportunityWonPlugin.cs` | Starter plugin example and template for new plugin classes. |
+| `AccountUpdatePlugin.cs` | Starter plugin example with separate pre-image and post-image registered events. |
 | `PluginKey.snk` | Passwordless strong-name key used to sign the plugin assembly. This starter repo allows this specific key to be committed so every machine builds the same assembly identity. |
 
 ## Build
@@ -50,7 +50,8 @@ The canonical guidance lives in [`../BEST_PRACTICES.md`](../BEST_PRACTICES.md). 
 
 - Declare expected runtime shape in `GetRegisteredEvents()` for each plugin: message, primary entity, stage, execution mode, and any required image name.
 - Include deployment metadata in each `RegisteredEvent`: filtering attributes, pre-image and post-image attribute lists, optional description, and Run in User's Context when the step needs them.
-- Point each registered event at a meaningfully named handler such as `OppPostOpUpdateSync`; avoid using generic handler names for business logic.
+- Use multiple `RegisteredEvent` entries when one plugin owns related stage-specific behavior; keep the message/entity/stage/mode distinct and point each event at its own handler.
+- Point each registered event at a meaningfully named handler such as `AccountPostOpUpdateSync`; avoid using generic handler names for business logic.
 - Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` for standard Dataverse message names, execution modes, and image aliases.
-- Use generated early-bound model constants such as `Opportunity.EntityLogicalName` and `Opportunity.Fields.*` instead of raw logical-name strings whenever the entity is in `Ops.Plugins.Model`.
+- Alias generated field classes in plugin files, such as `using AccountFields = Ops.Plugins.Model.Account.Fields;`, then use `AccountFields.*` instead of raw logical-name strings.
 - Keep raw logical-name strings only for generic infrastructure, explicit negative-path tests, or entities not yet generated into the model.

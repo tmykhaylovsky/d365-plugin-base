@@ -5,6 +5,7 @@ using Ops.Plugins.Registration;
 using Ops.Plugins.Shared;
 using PluginAssembly::Ops.Plugins;
 using PluginAssembly::Ops.Plugins.Model;
+using AccountFields = PluginAssembly::Ops.Plugins.Model.Account.Fields;
 using Xunit;
 
 namespace Ops.Plugins.Testing.Registration
@@ -14,41 +15,47 @@ namespace Ops.Plugins.Testing.Registration
         [Fact]
         public void Inspect_ReadsRegisteredEventsFromBuiltPluginAssembly()
         {
-            var assemblyPath = typeof(OpportunityWonPlugin).Assembly.Location;
+            var assemblyPath = typeof(AccountUpdatePlugin).Assembly.Location;
 
             var registration = new PluginAssemblyInspector().Inspect(assemblyPath);
-            var step = registration.PluginTypes.Single(t => t.TypeName == typeof(OpportunityWonPlugin).FullName).Steps.Single();
-            var preImage = step.Images.Single(i => i.Alias == PluginImageNames.PreImage);
-            var postImage = step.Images.Single(i => i.Alias == PluginImageNames.PostImage);
+            var pluginType = registration.PluginTypes.Single(t => t.TypeName == typeof(AccountUpdatePlugin).FullName);
+            var preOperationStep = pluginType.Steps.Single(s => s.Stage == (int)PluginBase.PluginStage.PreOperation);
+            var postOperationStep = pluginType.Steps.Single(s => s.Stage == (int)PluginBase.PluginStage.PostOperation);
+            var preImage = preOperationStep.Images.Single(i => i.Alias == PluginImageNames.PreImage);
+            var postImage = postOperationStep.Images.Single(i => i.Alias == PluginImageNames.PostImage);
 
-            Assert.Equal(typeof(OpportunityWonPlugin).Assembly.GetName().Name, registration.AssemblyName);
-            Assert.Equal(Messages.Update, step.MessageName);
-            Assert.Equal(Opportunity.EntityLogicalName, step.EntityLogicalName);
-            Assert.Equal((int)PluginBase.PluginStage.PostOperation, step.Stage);
-            Assert.Equal((int)SdkMessageProcessingStepMode.Synchronous, step.Mode);
-            Assert.Equal(1, step.Rank);
-            Assert.Equal(RegisteredEvent.CallingUser, step.RunInUserContext);
-            Assert.Equal("Stamps actual close date when an opportunity is won.", step.Description);
-            Assert.Equal(ExpectedFilteringAttributes(), step.FilteringAttributes.ToString());
-            Assert.Equal((int)sdkmessageprocessingstepimage_imagetype.PreImage, preImage.ImageType);
-            Assert.Equal(ExpectedPreImageAttributes(), preImage.Attributes.ToString());
-            Assert.Equal((int)sdkmessageprocessingstepimage_imagetype.PostImage, postImage.ImageType);
-            Assert.Equal(ExpectedPostImageAttributes(), postImage.Attributes.ToString());
+            Assert.Equal(typeof(AccountUpdatePlugin).Assembly.GetName().Name, registration.AssemblyName);
+            Assert.Equal(2, pluginType.Steps.Count);
+
+            Assert.Equal(Messages.Update, preOperationStep.MessageName);
+            Assert.Equal(Account.EntityLogicalName, preOperationStep.EntityLogicalName);
+            Assert.Equal((int)SdkMessageProcessingStepMode.Synchronous, preOperationStep.Mode);
+            Assert.Equal(1, preOperationStep.Rank);
+            Assert.Equal(RegisteredEvent.CallingUser, preOperationStep.RunInUserContext);
+            Assert.Equal("Protects assigned account numbers before update.", preOperationStep.Description);
+            Assert.Equal(ExpectedIdentityAttributes(), preOperationStep.FilteringAttributes.ToString());
+            Assert.Equal(0, preImage.ImageType);
+            Assert.Equal(ExpectedIdentityAttributes(), preImage.Attributes.ToString());
+
+            Assert.Equal(Messages.Update, postOperationStep.MessageName);
+            Assert.Equal(Account.EntityLogicalName, postOperationStep.EntityLogicalName);
+            Assert.Equal((int)SdkMessageProcessingStepMode.Synchronous, postOperationStep.Mode);
+            Assert.Equal(1, postOperationStep.Rank);
+            Assert.Equal(RegisteredEvent.CallingUser, postOperationStep.RunInUserContext);
+            Assert.Equal("Summarizes committed account profile updates.", postOperationStep.Description);
+            Assert.Equal(ExpectedProfileAttributes(), postOperationStep.FilteringAttributes.ToString());
+            Assert.Equal(1, postImage.ImageType);
+            Assert.Equal(ExpectedProfileAttributes(), postImage.Attributes.ToString());
         }
 
-        private static string ExpectedFilteringAttributes()
+        private static string ExpectedIdentityAttributes()
         {
-            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate, Opportunity.Fields.StateCode }).ToString();
+            return AttributeList.From(new[] { AccountFields.AccountNumber }).ToString();
         }
 
-        private static string ExpectedPreImageAttributes()
+        private static string ExpectedProfileAttributes()
         {
-            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate, Opportunity.Fields.ActualValue }).ToString();
-        }
-
-        private static string ExpectedPostImageAttributes()
-        {
-            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate, Opportunity.Fields.BudgetAmount }).ToString();
+            return AttributeList.From(new[] { AccountFields.Name, AccountFields.Telephone1 }).ToString();
         }
     }
 }

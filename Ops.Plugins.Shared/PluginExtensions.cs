@@ -74,6 +74,14 @@ namespace Ops.Plugins.Shared
             return $"{entity.LogicalName}({entity.Id:D}) [{attrs}]";
         }
 
+        // Human-readable single attribute value. Use when tracing image-to-image comparisons.
+        public static string FormatAttribute(this Entity entity, string logicalName)
+        {
+            return entity != null && entity.Attributes.TryGetValue(logicalName, out var value)
+                ? CrmFormat.OfObject(value)
+                : "null";
+        }
+
         private static string FormatAttributeValue(object value)
         {
             if (value == null)                    return "null";
@@ -288,6 +296,18 @@ namespace Ops.Plugins.Shared
                     ? "[no pre-images]"
                     : string.Join(" | ", images.Select(kvp => $"PreImage[{kvp.Key}]: {kvp.Value.ToTraceString()}"));
             }, TraceLevel.Verbose);
+
+        // Logs the before/after value for an attribute using pre/post images.
+        public static void TraceAttributeChange(
+            this PluginBase.LocalPluginContext context,
+            Entity preImage,
+            Entity postImage,
+            string logicalName,
+            bool changed,
+            TraceLevel level = TraceLevel.Info) =>
+            context.Trace(
+                () => $"{logicalName} changed: {changed} | {preImage.FormatAttribute(logicalName)} -> {postImage.FormatAttribute(logicalName)}",
+                level);
     }
 
     // -------------------------------------------------------------------------

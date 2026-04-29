@@ -13,25 +13,22 @@ namespace Ops.Plugins.Model
 {
 	
 	
-	/// <summary>
-	/// The sales process stage that this entity is in.
-	/// </summary>
 	[System.Runtime.Serialization.DataContractAttribute()]
 	[System.CodeDom.Compiler.GeneratedCodeAttribute("Dataverse Model Builder", "2.0.0.6")]
-	public enum opportunity_salesstage
+	public enum ops_industrytype
 	{
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Qualify = 0,
+		Consult = 1,
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Develop = 1,
+		HR = 2,
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Propose = 2,
+		SaaS = 3,
 		
 		[System.Runtime.Serialization.EnumMemberAttribute()]
-		Close = 3,
+		Client = 4,
 	}
 }
 #pragma warning restore CS1591

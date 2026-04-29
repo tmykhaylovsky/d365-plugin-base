@@ -13,15 +13,14 @@ using Ops.Plugins.Shared;
 // builder methods for constructing plugin execution contexts.
 //
 // Usage:
-//   public class OpportunityWonPluginTests : PluginTestBase
+//   public class AccountUpdatePluginTests : PluginTestBase
 //   {
 //       [Fact]
-//       public void GivenOpportunityWon_SetsCloseDate()
+//       public void GivenAccountNameChange_RunsPlugin()
 //       {
-//           var opportunity = new Opportunity { Id = Guid.NewGuid() };
-//           opportunity.StatusCode = opportunity_statuscode.Won;
-//           var ctx = BuildUpdateContext(opportunity);
-//           Context.ExecutePluginWith<OpportunityWonPlugin>(ctx);
+//           var account = new Account { Id = Guid.NewGuid(), Name = "Contoso" };
+//           var ctx = BuildUpdateContext(account);
+//           Context.ExecutePluginWith<AccountUpdatePlugin>(ctx);
 //           // assert on Context.Data or service calls
 //       }
 //   }

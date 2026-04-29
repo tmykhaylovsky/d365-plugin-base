@@ -8,7 +8,7 @@ xUnit test project for plugin behavior.
 |------|---------|
 | `Ops.Plugins.Testing.csproj` | Test project targeting `net462`. |
 | `PluginTestBase.cs` | FakeXrmEasy setup and plugin execution helpers. |
-| `OpportunityWonPluginTests.cs` | Starter tests for the included plugin. |
+| `AccountUpdatePluginTests.cs` | Starter tests for the included plugin's pre-image guard and post-image handler. |
 
 ## Run tests
 
@@ -30,10 +30,11 @@ The canonical testing guidance lives in [`../BEST_PRACTICES.md`](../BEST_PRACTIC
 
 Prefer the generated early-bound models from `Ops.Plugins.Model` when building Dataverse records in tests:
 
-- Create records with generated entity types such as `Opportunity` so logical names come from the model.
-- Use `Opportunity.EntityLogicalName` for static entity logical-name references, or `target.LogicalName` when the test already has an early-bound instance.
-- Use generated option-set enums such as `opportunity_statuscode.Won` instead of integer status values.
-- Use `Opportunity.Fields.*` constants for column sets and attribute assertions.
+- Create records with generated entity types such as `Account` so logical names come from the model.
+- Use `Account.EntityLogicalName` for static entity logical-name references, or `target.LogicalName` when the test already has an early-bound instance.
+- Use generated option-set enums instead of integer option values when the model exposes them.
+- Alias generated field classes, such as `using AccountFields = PluginAssembly::Ops.Plugins.Model.Account.Fields;`, and use `AccountFields.*` for column sets and attribute assertions.
 - Use `Messages.*` and `PluginImageNames.*` constants from `Ops.Plugins.Shared` for standard Dataverse message names and image aliases.
 - Read assembly and plugin type names from `typeof(SomePlugin).Assembly.GetName().Name` and `typeof(SomePlugin).FullName` instead of duplicating project metadata.
+- When a plugin has multiple `RegisteredEvent` entries, test the business behavior and missing-image exit for each relevant stage.
 - Keep raw logical-name strings only in generic test infrastructure, negative-path tests for entities not present in the model, or when no early-bound model exists yet.

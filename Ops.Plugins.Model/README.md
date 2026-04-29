@@ -20,7 +20,6 @@ The tool overwrites all files it manages (`Entities/`, `OptionSets/`, `CrmServic
 
 ```json
 "entityNamesFilter": [
-  "opportunity",
   "account"
 ]
 ```
@@ -57,15 +56,14 @@ Set in `builderSettings.json`:
 ```json
 "generateSdkMessages": true,
 "messageNamesFilter": [
-  "WinOpportunity",
-  "LoseOpportunity"
+  "new_*"
 ]
 ```
 
 Use a trailing wildcard to match by prefix (e.g. `"ops_*"`). Message files land in `Messages/`. After generation, add them to `Ops.Plugins.Model.projitems`:
 
 ```xml
-<Compile Include="$(MSBuildThisFileDirectory)Messages\WinOpportunity.cs" />
+<Compile Include="$(MSBuildThisFileDirectory)Messages\new_CustomAction.cs" />
 ```
 
 ## Excluding custom columns from public repos
@@ -76,7 +74,7 @@ The generator emits every attribute it finds. Before committing, remove any prop
 
 | File | Purpose |
 |------|---------|
-| `Entities/opportunity.cs` | `Opportunity` early-bound class + entity-local enums + `Fields` constants |
+| `Entities/account.cs` | `Account` early-bound class + entity-local enums + `Fields` constants |
 | `OptionSets/*.cs` | Global option set enums referenced by filtered entities |
 | `CrmServiceContext.cs` | `OrganizationServiceContext` subclass for LINQ queries |
 | `EntityOptionSetEnum.cs` | Internal helper used by generated property getters |

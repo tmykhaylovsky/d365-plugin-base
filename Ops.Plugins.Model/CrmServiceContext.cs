@@ -31,79 +31,13 @@ namespace Ops.Plugins.Model
 		}
 		
 		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.Opportunity"/> entities.
+		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.Account"/> entities.
 		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.Opportunity> OpportunitySet
+		public System.Linq.IQueryable<Ops.Plugins.Model.Account> AccountSet
 		{
 			get
 			{
-				return this.CreateQuery<Ops.Plugins.Model.Opportunity>();
-			}
-		}
-		
-		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.PluginAssembly"/> entities.
-		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.PluginAssembly> PluginAssemblySet
-		{
-			get
-			{
-				return this.CreateQuery<Ops.Plugins.Model.PluginAssembly>();
-			}
-		}
-		
-		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.PluginType"/> entities.
-		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.PluginType> PluginTypeSet
-		{
-			get
-			{
-				return this.CreateQuery<Ops.Plugins.Model.PluginType>();
-			}
-		}
-		
-		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.SdkMessage"/> entities.
-		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.SdkMessage> SdkMessageSet
-		{
-			get
-			{
-				return this.CreateQuery<Ops.Plugins.Model.SdkMessage>();
-			}
-		}
-		
-		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.SdkMessageFilter"/> entities.
-		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.SdkMessageFilter> SdkMessageFilterSet
-		{
-			get
-			{
-				return this.CreateQuery<Ops.Plugins.Model.SdkMessageFilter>();
-			}
-		}
-		
-		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.SdkMessageProcessingStep"/> entities.
-		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.SdkMessageProcessingStep> SdkMessageProcessingStepSet
-		{
-			get
-			{
-				return this.CreateQuery<Ops.Plugins.Model.SdkMessageProcessingStep>();
-			}
-		}
-		
-		/// <summary>
-		/// Gets a binding to the set of all <see cref="Ops.Plugins.Model.SdkMessageProcessingStepImage"/> entities.
-		/// </summary>
-		public System.Linq.IQueryable<Ops.Plugins.Model.SdkMessageProcessingStepImage> SdkMessageProcessingStepImageSet
-		{
-			get
-			{
-				return this.CreateQuery<Ops.Plugins.Model.SdkMessageProcessingStepImage>();
+				return this.CreateQuery<Ops.Plugins.Model.Account>();
 			}
 		}
 	}

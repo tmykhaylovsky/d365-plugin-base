@@ -11,13 +11,7 @@
   "messagesTypesFolder": "Messages",
   "optionSetsTypesFolder": "OptionSets",
   "entityNamesFilter": [
-    "opportunity",
-    "pluginassembly",
-    "plugintype",
-    "sdkmessage",
-    "sdkmessagefilter",
-    "sdkmessageprocessingstep",
-    "sdkmessageprocessingstepimage"
+    "account"
   ],
   "emitEntityETC": false,
   "emitVirtualAttributes": false

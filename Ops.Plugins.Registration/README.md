@@ -4,6 +4,8 @@ Console tool for syncing Dataverse plugin step and image registration from the b
 
 The tool reads `RegisteredEvent` metadata from `Ops.Plugins.dll`, compares it with `pluginassembly`, `plugintype`, `sdkmessageprocessingstep`, and `sdkmessageprocessingstepimage` rows in Dataverse, then prints a dry-run plan. It only writes when `--apply` is passed.
 
+One plugin class may declare multiple `RegisteredEvent` entries. The starter `AccountUpdatePlugin` does this for a pre-operation account-number guard with `PreImage` and a post-operation account-profile trace with `PostImage`.
+
 ## Typical Flow
 
 From the repository root, use the wrapper for the most direct path:

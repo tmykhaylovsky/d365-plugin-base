@@ -83,7 +83,7 @@ Yes, step registration can be automated for assemblies that are already in Datav
 3. For each plugin class, compare the code-declared `RegisteredEvent` metadata with existing `sdkmessageprocessingstep` rows.
 4. Dry-run by default, then use `--apply` to create missing steps/images and update safe drift fields.
 
-`RegisteredEvent` includes deployment metadata for this: message, entity, stage, mode, rank, filtering attributes, required image names, and image attributes. The starter plugin uses that metadata for `OpportunityWonPlugin`.
+`RegisteredEvent` includes deployment metadata for this: message, entity, stage, mode, rank, filtering attributes, required image names, and image attributes. The starter plugin uses that metadata for `AccountUpdatePlugin`.
 
 Before applying, the sync tool validates declared entity logical names against the
 target environment, creates steps before images, and treats disabled matching steps
@@ -92,9 +92,12 @@ It can also sync optional step description and Run in User's Context metadata.
 
 ## Included Starter Plugin
 
-`OpportunityWonPlugin` is a small example plugin registered on `Update` of `opportunity` at synchronous `PostOperation`, filtered on `statuscode`, with `PreImage` and `PostImage` image records containing `statuscode` and `actualclosedate`. In real production logic, opportunity state/status transitions may be better handled with the platform's state transition messages; this starter intentionally keeps the example compact.
+`AccountUpdatePlugin` is a small example plugin with two synchronous `Update` steps on `account`:
 
-When the opportunity moves to Won, it stamps `actualclosedate` if that field was not already set.
+- `PreOperation`, filtered on `accountnumber`, requires `PreImage` and blocks changes after an account number is assigned.
+- `PostOperation`, filtered on `name` and `telephone1`, requires `PostImage` and traces the committed account profile without issuing a retrieve.
+
+Together they show how one plugin class can expose multiple `RegisteredEvent` entries while keeping stage-specific handlers separate.
 
 ## Early-Bound Model Regeneration
 

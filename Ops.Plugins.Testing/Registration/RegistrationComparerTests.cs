@@ -7,14 +7,21 @@ using Ops.Plugins.Registration;
 using Ops.Plugins.Shared;
 using PluginAssembly::Ops.Plugins;
 using PluginAssembly::Ops.Plugins.Model;
+using AccountFields = PluginAssembly::Ops.Plugins.Model.Account.Fields;
 using Xunit;
 
 namespace Ops.Plugins.Testing.Registration
 {
     public class RegistrationComparerTests
     {
-        private static readonly string PluginTypeName = typeof(OpportunityWonPlugin).FullName;
-        private static readonly string PluginAssemblyName = typeof(OpportunityWonPlugin).Assembly.GetName().Name;
+        private const int PreImageType = 0;
+        private const int PostOperationStage = (int)PluginBase.PluginStage.PostOperation;
+        private const int PreOperationStage = (int)PluginBase.PluginStage.PreOperation;
+        private const int EnabledState = 0;
+        private const int DisabledState = 1;
+
+        private static readonly string PluginTypeName = typeof(AccountUpdatePlugin).FullName;
+        private static readonly string PluginAssemblyName = typeof(AccountUpdatePlugin).Assembly.GetName().Name;
 
         [Fact]
         public void Compare_CreatesMissingStepAndImage()
@@ -34,7 +41,7 @@ namespace Ops.Plugins.Testing.Registration
         {
             var desired = Desired();
             var step = MatchingStep(filteringAttributes: "");
-            var image = MatchingImage(step, attributes: Opportunity.Fields.StatusCode);
+            var image = MatchingImage(step, attributes: AccountFields.Name);
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
 
@@ -60,7 +67,7 @@ namespace Ops.Plugins.Testing.Registration
         {
             var desired = Desired();
             var step = MatchingStep();
-            step.Stage = (int)sdkmessageprocessingstep_stage.Preoperation;
+            step.Stage = PreOperationStage;
             var image = MatchingImage(step, attributes: ExpectedImageAttributes());
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
@@ -74,7 +81,7 @@ namespace Ops.Plugins.Testing.Registration
         {
             var desired = Desired();
             var step = MatchingStep();
-            step.StateCode = (int)sdkmessageprocessingstep_statecode.Disabled;
+            step.StateCode = DisabledState;
             var image = MatchingImage(step, attributes: ExpectedImageAttributes());
 
             var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
@@ -94,24 +101,24 @@ namespace Ops.Plugins.Testing.Registration
             {
                 PluginTypeName = PluginTypeName,
                 MessageName = Messages.Update,
-                EntityLogicalName = Opportunity.EntityLogicalName,
-                StepStage = (int)sdkmessageprocessingstep_stage.Postoperation,
-                StepMode = (int)sdkmessageprocessingstep_mode.Synchronous,
+                EntityLogicalName = Account.EntityLogicalName,
+                StepStage = PostOperationStage,
+                StepMode = (int)SdkMessageProcessingStepMode.Synchronous,
                 Alias = PluginImageNames.PreImage,
-                ImageType = (int)sdkmessageprocessingstepimage_imagetype.PreImage,
+                ImageType = PreImageType,
                 MessagePropertyName = SdkMessagePropertyNames.Target,
-                Attributes = AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate })
+                Attributes = AttributeList.From(MonitoredAccountAttributes())
             };
 
             var step = new DesiredStep
             {
                 PluginTypeName = PluginTypeName,
                 MessageName = Messages.Update,
-                EntityLogicalName = Opportunity.EntityLogicalName,
-                Stage = (int)sdkmessageprocessingstep_stage.Postoperation,
-                Mode = (int)sdkmessageprocessingstep_mode.Synchronous,
+                EntityLogicalName = Account.EntityLogicalName,
+                Stage = PostOperationStage,
+                Mode = (int)SdkMessageProcessingStepMode.Synchronous,
                 Rank = 1,
-                FilteringAttributes = AttributeList.From(new[] { Opportunity.Fields.StatusCode }),
+                FilteringAttributes = AttributeList.From(MonitoredAccountAttributes()),
                 Images = new[] { image }
             };
 
@@ -142,12 +149,12 @@ namespace Ops.Plugins.Testing.Registration
                 PluginTypeName = PluginTypeName,
                 PluginTypeId = Guid.NewGuid(),
                 MessageName = message ?? Messages.Update,
-                EntityLogicalName = Opportunity.EntityLogicalName,
-                Stage = (int)sdkmessageprocessingstep_stage.Postoperation,
-                Mode = (int)sdkmessageprocessingstep_mode.Synchronous,
+                EntityLogicalName = Account.EntityLogicalName,
+                Stage = PostOperationStage,
+                Mode = (int)SdkMessageProcessingStepMode.Synchronous,
                 Rank = 1,
-                FilteringAttributes = AttributeList.Parse(filteringAttributes ?? Opportunity.Fields.StatusCode),
-                StateCode = (int)sdkmessageprocessingstep_statecode.Enabled
+                FilteringAttributes = AttributeList.Parse(filteringAttributes ?? AccountFields.Name),
+                StateCode = EnabledState
             };
         }
 
@@ -159,7 +166,7 @@ namespace Ops.Plugins.Testing.Registration
                 StepId = step.Id,
                 StepKey = step.Key,
                 Alias = PluginImageNames.PreImage,
-                ImageType = (int)sdkmessageprocessingstepimage_imagetype.PreImage,
+                ImageType = PreImageType,
                 MessagePropertyName = SdkMessagePropertyNames.Target,
                 Attributes = AttributeList.Parse(attributes)
             };
@@ -167,7 +174,12 @@ namespace Ops.Plugins.Testing.Registration
 
         private static string ExpectedImageAttributes()
         {
-            return AttributeList.From(new[] { Opportunity.Fields.StatusCode, Opportunity.Fields.ActualCloseDate }).ToString();
+            return AttributeList.From(MonitoredAccountAttributes()).ToString();
+        }
+
+        private static string[] MonitoredAccountAttributes()
+        {
+            return new[] { AccountFields.Name, AccountFields.AccountNumber, AccountFields.Telephone1 };
         }
     }
 }

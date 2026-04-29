@@ -7,10 +7,11 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Keep plugin classes stateless. Dataverse can cache and reuse `IPlugin` instances, so do not store services, execution context, target records, or other invocation data in instance fields.
 - Declare the expected runtime and deployment shape in `GetRegisteredEvents()`: message, primary entity, pipeline stage, execution mode, handler, filtering attributes, required image aliases, and image attributes.
 - Include optional deployment metadata there when it matters: step description, execution order, and Run in User's Context. Prefer `RunInUserContext.CallingUser`; when a fixed user is needed, reference a shared run-as label and resolve it during registration sync.
+- Multiple `RegisteredEvent` entries in one plugin are fine when they represent related behavior at distinct message/entity/stage/mode combinations. Do not duplicate the same event shape just to call multiple handlers.
 - Document fixed Run in User's Context labels near the registration workflow, not as raw GUIDs in plugin code.
-- Point each registered event at a concise step-oriented handler name, such as `OppPostOpUpdateSync`.
+- Point each registered event at a concise step-oriented handler name, such as `AccountPostOpUpdateSync`.
 - Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` instead of raw strings for standard Dataverse values.
-- Use generated early-bound model types from `Ops.Plugins.Model` whenever available. Prefer `Opportunity.EntityLogicalName`, `Opportunity.Fields.*`, and generated option-set enums over raw logical names or integer option values.
+- Use generated early-bound model types from `Ops.Plugins.Model` whenever available. Prefer `Account.EntityLogicalName`, generated option-set enums, and field-class aliases such as `using AccountFields = Ops.Plugins.Model.Account.Fields;` over raw logical names or integer option values.
 - In infrastructure projects that touch generated tables, use generated entity classes for create/update records and generated `Fields.*` constants for `QueryExpression`/`ColumnSet` plumbing.
 - Convert Dataverse `Target` and images to early-bound types with `ToEntity<T>()`; do not replace input parameters with early-bound entity instances.
 - Throw `InvalidPluginExecutionException` for expected business failures that should be shown as plugin errors.
@@ -59,7 +60,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 - Regenerate model code from `Ops.Plugins.Model/builderSettings.json`; do not hand-edit generated entity or option-set files except for intentional cleanup before committing.
 - After regeneration, sync `Ops.Plugins.Model.projitems` with added or removed generated files.
-- Include registration tables in the model when registration automation needs them, so step stage/mode/state/image type values come from generated option-set enums rather than raw integers.
+- Include only the business tables the plugins and tests need in the generated model. Registration automation keeps its own logical-name constants for Dataverse registration tables.
 - Keep generated public-repo models minimal. Remove accidental internal/custom-prefixed columns before committing when this repository should not expose them.
 - Add new entities to `entityNamesFilter` only when the plugin or tests need them.
 
@@ -75,7 +76,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Tests should exercise business behavior and registration guards: message, primary entity, stage, mode, required images, filtering behavior, and missing-image exits.
 - Build records with early-bound model classes when available.
 - Assert assembly names from `typeof(SomePlugin).Assembly.GetName().Name` and plugin type names from `typeof(SomePlugin).FullName`; avoid duplicating project metadata in tests.
-- Use `Messages.*`, `PluginImageNames.*`, `Opportunity.EntityLogicalName`, and `Opportunity.Fields.*` in tests.
+- Use `Messages.*`, `PluginImageNames.*`, `Account.EntityLogicalName`, and field-class aliases such as `AccountFields.*` in tests.
 - Raw logical-name strings are acceptable only for generic infrastructure, explicit negative-path tests, or entities not generated into `Ops.Plugins.Model`.
 - Keep test project references narrow. `Ops.Plugins.Testing` should reference `Ops.Plugins.csproj`; shared and model code are tested through the compiled plugin assembly.
 
