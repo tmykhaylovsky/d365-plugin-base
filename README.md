@@ -25,7 +25,7 @@ dotnet test Ops.Plugins.slnx
 
 ## Power Platform CLI Prerequisites
 
-See [`PAC_CLI.md`](PAC_CLI.md) for the concise command reference covering `pac auth`, `pac plugin push`, and `pac modelbuilder build`.
+See [`PAC_CLI.md`](PAC_CLI.md) for the concise command reference covering `pac auth`, `pac plugin push`, and early-bound model generation.
 
 ## Windows Command Notes
 
@@ -101,7 +101,13 @@ Together they show how one plugin class can expose multiple `RegisteredEvent` en
 
 ## Early-Bound Model Regeneration
 
-Generation settings live in `Ops.Plugins.Model/builderSettings.json`. See [`PAC_CLI.md`](PAC_CLI.md) for the `pac modelbuilder build` command. After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` if new entity, option set, or message files are added.
+Generation settings live in `Ops.Plugins.Model/builderSettings.json`. After editing them, run:
+
+```powershell
+.\Scripts\Update-EarlyBoundModel.ps1
+```
+
+The wrapper runs `pac modelbuilder build` and updates `Ops.Plugins.Model/Ops.Plugins.Model.projitems` when generated entity, option set, or message files change.
 
 ## Signing
 
@@ -139,6 +145,9 @@ Use the root scripts for repeatable setup tasks:
 
 # Explicitly create or verify the plugin signing key.
 .\Scripts\New-PluginSigningKey.ps1 -ProjectPath .\Ops.Plugins\Ops.Plugins.csproj
+
+# Regenerate early-bound model code from builderSettings.json.
+.\Scripts\Update-EarlyBoundModel.ps1
 ```
 
 `Rename-SolutionPrefix.ps1` only targets `Ops.`-style prefixes by default, so standalone strings like `Ops` are left alone. Use `-ReplaceStandalonePrefix` only when you really want every standalone `Ops` identifier changed too.

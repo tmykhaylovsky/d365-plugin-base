@@ -146,13 +146,33 @@ see [`Ops.Plugins.Registration/README.md`](Ops.Plugins.Registration/README.md#ru
 
 ## Regenerate Early-Bound Model
 
+Use the wrapper script after editing `Ops.Plugins.Model/builderSettings.json`:
+
+```powershell
+.\Scripts\Update-EarlyBoundModel.ps1
+```
+
+Pass `-Environment` to target a specific Dataverse environment instead of the
+currently selected PAC auth profile:
+
+```powershell
+.\Scripts\Update-EarlyBoundModel.ps1 -Environment https://<your-org>.crm.dynamics.com
+```
+
+The script runs `pac modelbuilder build` and then updates
+`Ops.Plugins.Model/Ops.Plugins.Model.projitems` with generated `.cs` files.
+Use `-NoProjItemsUpdate` if you want to inspect raw PAC output first.
+
+The underlying PAC command is:
+
 ```powershell
 pac modelbuilder build `
   --settingsTemplateFile Ops.Plugins.Model/builderSettings.json `
   --outdirectory Ops.Plugins.Model
 ```
 
-After regeneration, update `Ops.Plugins.Model/Ops.Plugins.Model.projitems` when entity, option set, or message files are added or removed.
+Before regeneration, ensure PAC is authenticated with `pac auth create` and the
+intended profile is selected with `pac auth select`, or pass `-Environment`.
 
 ## Step Registration Automation Status
 

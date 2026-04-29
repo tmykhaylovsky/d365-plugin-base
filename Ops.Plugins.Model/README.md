@@ -10,9 +10,15 @@ Install PAC CLI and select the target environment using [`../PAC_CLI.md`](../PAC
 
 ## Regenerating classes
 
-All generation settings are captured in [`builderSettings.json`](builderSettings.json). Run the `pac modelbuilder build` command from [`../PAC_CLI.md`](../PAC_CLI.md).
+All generation settings are captured in [`builderSettings.json`](builderSettings.json). After editing it, run the wrapper from the repository root:
 
-The tool overwrites all files it manages (`Entities/`, `OptionSets/`, `CrmServiceContext.cs`, `EntityOptionSetEnum.cs`). After running, sync `Ops.Plugins.Model.projitems` with any files that were added or removed (see below).
+```powershell
+.\Scripts\Update-EarlyBoundModel.ps1
+```
+
+Use `-Environment https://<org>.crm.dynamics.com` when you want to target a specific Dataverse environment instead of the active PAC auth profile.
+
+The tool overwrites all files it manages (`Entities/`, `OptionSets/`, `CrmServiceContext.cs`, `EntityOptionSetEnum.cs`). The wrapper syncs `Ops.Plugins.Model.projitems` with generated `.cs` files after PAC finishes.
 
 ## Adding a new table
 
@@ -25,13 +31,13 @@ The tool overwrites all files it manages (`Entities/`, `OptionSets/`, `CrmServic
 ```
 
 2. Re-run the generation command above.
-3. Add the new `Entities\<tablename>.cs` to `Ops.Plugins.Model.projitems`:
+3. Confirm the wrapper added the new `Entities\<tablename>.cs` to `Ops.Plugins.Model.projitems`:
 
 ```xml
 <Compile Include="$(MSBuildThisFileDirectory)Entities\account.cs" />
 ```
 
-4. Add any new option set files that appeared in `OptionSets\` to the same `projitems` `<ItemGroup>`.
+4. Confirm any new option set files that appeared in `OptionSets\` were added to the same `projitems` `<ItemGroup>`.
 
 ## Adding columns to an existing table
 
@@ -45,7 +51,7 @@ By default only option sets referenced by a filtered entity are emitted. To emit
 "generateGlobalOptionSets": true
 ```
 
-Then add all new files that appear in `OptionSets\` to `Ops.Plugins.Model.projitems`.
+The wrapper adds new files that appear in `OptionSets\` to `Ops.Plugins.Model.projitems`.
 
 To add a specific global option set without enabling all of them, the simplest approach is to add a lightweight entity that references it to `entityNamesFilter` — the option set will then be emitted automatically.
 
@@ -60,7 +66,7 @@ Set in `builderSettings.json`:
 ]
 ```
 
-Use a trailing wildcard to match by prefix (e.g. `"ops_*"`). Message files land in `Messages/`. After generation, add them to `Ops.Plugins.Model.projitems`:
+Use a trailing wildcard to match by prefix (e.g. `"ops_*"`). Message files land in `Messages/`. After generation, confirm the wrapper added them to `Ops.Plugins.Model.projitems`:
 
 ```xml
 <Compile Include="$(MSBuildThisFileDirectory)Messages\new_CustomAction.cs" />
