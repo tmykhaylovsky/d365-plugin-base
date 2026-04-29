@@ -29,6 +29,37 @@ function Write-CommandPreview {
     Write-Host ""
 }
 
+function Test-ModelBuilderSupportsEnvironment {
+    $helpOutput = (& pac modelbuilder build --help 2>&1) | Out-String
+    return ($helpOutput -match '(?m)^\s*--environment\b')
+}
+
+function Invoke-PacCommand {
+    param([string[]] $Arguments)
+
+    $output = @(& pac @Arguments 2>&1)
+    $exitCode = $LASTEXITCODE
+
+    foreach ($line in $output) {
+        Write-Host $line
+    }
+
+    $outputText = ($output | Out-String)
+    $pacReportedFailure =
+        $outputText -match '(?m)^Error:' -or
+        $outputText -match '(?m)^\[ERROR\]' -or
+        $outputText -match 'non recoverable error' -or
+        $outputText -match 'Exception Type:'
+
+    if ($exitCode -ne 0 -or $pacReportedFailure) {
+        if ($exitCode -eq 0) {
+            exit 1
+        }
+
+        exit $exitCode
+    }
+}
+
 function ConvertTo-ProjItemsInclude {
     param(
         [string] $ModelDirectory,
@@ -117,6 +148,7 @@ if ($Help) {
     Write-Host "Defaults:"
     Write-Host "  - Runs pac modelbuilder build with -OutDirectory and -SettingsTemplateFile."
     Write-Host "  - Uses the active PAC auth profile unless -Environment is passed."
+    Write-Host "  - On older PAC versions, -Environment first runs pac org select --environment."
     Write-Host "  - Updates Ops.Plugins.Model.projitems after generation unless -NoProjItemsUpdate is passed."
     exit 0
 }
@@ -139,6 +171,18 @@ try {
         throw "Could not find output directory: $OutDirectory"
     }
 
+    $modelBuilderSupportsEnvironment = $false
+    if (-not [string]::IsNullOrWhiteSpace($Environment)) {
+        $modelBuilderSupportsEnvironment = Test-ModelBuilderSupportsEnvironment
+        if (-not $modelBuilderSupportsEnvironment) {
+            $selectArgs = @("org", "select", "--environment", $Environment)
+            Write-Host "Selecting Dataverse environment for the active PAC auth profile:"
+            Write-CommandPreview -Arguments $selectArgs
+            Invoke-PacCommand -Arguments $selectArgs
+            Write-Host ""
+        }
+    }
+
     $pacArgs = @(
         "modelbuilder",
         "build",
@@ -146,7 +190,7 @@ try {
         "--settingsTemplateFile", $settingsPath.Path
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($Environment)) {
+    if (-not [string]::IsNullOrWhiteSpace($Environment) -and $modelBuilderSupportsEnvironment) {
         $pacArgs += @("--environment", $Environment)
     }
 
@@ -156,10 +200,7 @@ try {
 
     Write-CommandPreview -Arguments $pacArgs
 
-    & pac @pacArgs
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
-    }
+    Invoke-PacCommand -Arguments $pacArgs
 
     if (-not $NoProjItemsUpdate) {
         $projectName = Split-Path -Leaf $outDirectoryPath.Path

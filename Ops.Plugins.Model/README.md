@@ -16,7 +16,7 @@ All generation settings are captured in [`builderSettings.json`](builderSettings
 .\Scripts\Update-EarlyBoundModel.ps1
 ```
 
-Use `-Environment https://<org>.crm.dynamics.com` when you want to target a specific Dataverse environment instead of the active PAC auth profile.
+Use `-Environment https://<org>.crm.dynamics.com` when you want the wrapper to target a specific Dataverse environment. Older PAC versions select that org before generation; newer PAC versions can pass the environment directly to modelbuilder.
 
 The tool overwrites all files it manages (`Entities/`, `OptionSets/`, `CrmServiceContext.cs`, `EntityOptionSetEnum.cs`). The wrapper syncs `Ops.Plugins.Model.projitems` with generated `.cs` files after PAC finishes.
 

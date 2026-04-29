@@ -152,8 +152,10 @@ Use the wrapper script after editing `Ops.Plugins.Model/builderSettings.json`:
 .\Scripts\Update-EarlyBoundModel.ps1
 ```
 
-Pass `-Environment` to target a specific Dataverse environment instead of the
-currently selected PAC auth profile:
+Pass `-Environment` to target a specific Dataverse environment. On newer PAC
+versions the wrapper passes this through to `pac modelbuilder build`; on older
+versions it first runs `pac org select --environment` and then runs modelbuilder
+against the selected org:
 
 ```powershell
 .\Scripts\Update-EarlyBoundModel.ps1 -Environment https://<your-org>.crm.dynamics.com
@@ -171,8 +173,10 @@ pac modelbuilder build `
   --outdirectory Ops.Plugins.Model
 ```
 
-Before regeneration, ensure PAC is authenticated with `pac auth create` and the
-intended profile is selected with `pac auth select`, or pass `-Environment`.
+Before regeneration, ensure PAC is authenticated with `pac auth create`. If you
+work across multiple auth profiles, select the intended profile with
+`pac auth select`; then pass `-Environment` when you need the wrapper to select
+the Dataverse org for that profile.
 
 ## Step Registration Automation Status
 
