@@ -24,4 +24,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)RunInUserContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)SdkMessageProcessingStepMode.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
+  </ItemGroup>
 </Project>

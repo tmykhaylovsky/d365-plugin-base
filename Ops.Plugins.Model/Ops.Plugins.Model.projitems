@@ -14,4 +14,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)Entities\account.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)OptionSets\ops_industrytype.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)builderSettings.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md" />
+  </ItemGroup>
 </Project>
