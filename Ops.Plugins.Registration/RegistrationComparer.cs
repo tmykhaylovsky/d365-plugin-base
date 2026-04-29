@@ -6,6 +6,37 @@ namespace Ops.Plugins.Registration
 {
     public sealed class RegistrationComparer
     {
+        private const string PushAssemblyRecommendation = "Re-run with -PushAssembly to update the assembly binary, then review/apply the step changes.";
+
+        public RegistrationPlan ComparePushAssemblyReadiness(DesiredRegistration desired, ActualRegistration actual)
+        {
+            var desiredPluginTypeNames = new HashSet<string>(
+                desired.PluginTypeNamesInAssembly ?? Array.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
+
+            var changes = actual.PluginTypes.Values
+                .Where(t => !desiredPluginTypeNames.Contains(t.TypeName))
+                .OrderBy(t => t.TypeName, StringComparer.OrdinalIgnoreCase)
+                .Select(t => BuildStalePluginTypeChange(t, actual))
+                .ToArray();
+
+            return new RegistrationPlan(changes);
+        }
+
+        public bool CanResolveByPushingAssembly(RegistrationPlan plan)
+        {
+            if (plan == null || plan.Errors == 0) return false;
+
+            var errors = plan.Changes
+                .Where(c => c.Action == RegistrationActionKind.Error)
+                .ToArray();
+
+            return errors.Length > 0
+                && errors.All(c => c.Target == RegistrationTargetKind.PluginType
+                    && c.Detail != null
+                    && c.Detail.IndexOf(PushAssemblyRecommendation, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
         public RegistrationPlan Compare(DesiredRegistration desired, ActualRegistration actual, RegistrationOptions options)
         {
             var changes = new List<RegistrationChange>();
@@ -19,7 +50,7 @@ namespace Ops.Plugins.Registration
                 ActualPluginType pluginType;
                 if (!actual.PluginTypes.TryGetValue(desiredStep.PluginTypeName, out pluginType))
                 {
-                    changes.Add(Change(RegistrationActionKind.Error, RegistrationTargetKind.PluginType, desiredStep, null, "Plug-in type not found in Dataverse. Run pac plugin push first."));
+                    changes.Add(Change(RegistrationActionKind.Error, RegistrationTargetKind.PluginType, desiredStep, null, BuildMissingPluginTypeMessage(desiredStep.PluginTypeName, actual, options)));
                     continue;
                 }
 
@@ -45,7 +76,7 @@ namespace Ops.Plugins.Registration
                     if (matches.Length == 1)
                     {
                         var driftedStep = matches[0];
-                        var drift = $"stage/mode: {driftedStep.Stage}/{driftedStep.Mode} -> {desiredStep.Stage}/{desiredStep.Mode}";
+                        var drift = $"stage/mode: {FormatStageAndMode(driftedStep.Stage, driftedStep.Mode)} -> {FormatStageAndMode(desiredStep.Stage, desiredStep.Mode)}";
                         changes.Add(Change(RegistrationActionKind.Update, RegistrationTargetKind.Step, desiredStep, driftedStep, drift));
                         AddStepWarnings(changes, desiredStep, driftedStep);
                         AddImageComparison(changes, desiredStep, driftedStep, actual.Images.Where(i => i.StepId == driftedStep.Id).ToArray());
@@ -68,6 +99,108 @@ namespace Ops.Plugins.Registration
                 changes.Add(Change(RegistrationActionKind.Extra, RegistrationTargetKind.Step, null, extraStep, "No RegisteredEvent metadata matched this existing step."));
 
             return new RegistrationPlan(changes);
+        }
+
+        private static RegistrationChange BuildStalePluginTypeChange(ActualPluginType pluginType, ActualRegistration actual)
+        {
+            var steps = actual.Steps
+                .Where(s => string.Equals(s.PluginTypeName, pluginType.TypeName, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(s => s.MessageName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(s => s.EntityLogicalName, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var stepIds = new HashSet<Guid>(steps.Select(s => s.Id));
+            var imageCount = actual.Images.Count(i => stepIds.Contains(i.StepId));
+            var enabledCount = steps.Count(s => s.StateCode == 0);
+            var managedCount = steps.Count(s => s.IsManaged);
+            var stepSummary = string.Join("; ", steps.Select(s =>
+                $"{s.MessageName} {s.EntityLogicalName ?? "(none)"} {FormatStageAndMode(s.Stage, s.Mode)}" + (s.StateCode == 0 ? " enabled" : " disabled")));
+
+            var detail = "Plug-in type is registered in Dataverse but is missing from the current DLL. "
+                + $"Manual review required before pushing assembly content. Dependent registrations: {steps.Length} step(s), {imageCount} image(s).";
+
+            if (enabledCount > 0)
+                detail += $" Enabled step(s): {enabledCount}.";
+            if (managedCount > 0)
+                detail += $" Managed step(s): {managedCount}.";
+            if (!string.IsNullOrWhiteSpace(stepSummary))
+                detail += " Steps: " + stepSummary + ".";
+            detail += " Remove or retire this stale plug-in type and its dependent registrations in Dataverse, then rerun -PushAssembly.";
+
+            return new RegistrationChange
+            {
+                Action = RegistrationActionKind.Error,
+                Target = RegistrationTargetKind.PluginType,
+                PluginTypeName = pluginType.TypeName,
+                Detail = detail
+            };
+        }
+
+        private static string FormatStageAndMode(int stage, int mode)
+        {
+            return FormatStage(stage) + " " + FormatMode(mode);
+        }
+
+        private static string FormatStage(int stage)
+        {
+            switch (stage)
+            {
+                case 10:
+                    return "PreValidation";
+                case 20:
+                    return "PreOperation";
+                case 40:
+                    return "PostOperation";
+                default:
+                    return "stage " + stage;
+            }
+        }
+
+        private static string FormatMode(int mode)
+        {
+            switch (mode)
+            {
+                case 0:
+                    return "synchronous";
+                case 1:
+                    return "asynchronous";
+                default:
+                    return "mode " + mode;
+            }
+        }
+
+        private static string BuildMissingPluginTypeMessage(string desiredPluginTypeName, ActualRegistration actual, RegistrationOptions options)
+        {
+            var existingTypeNames = actual.PluginTypes.Keys
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var detail = "Plug-in type not found under existing pluginassembly '" + actual.Assembly.Name + "'.";
+            if (existingTypeNames.Length > 0)
+            {
+                detail += " Existing type(s): " + string.Join(", ", existingTypeNames) + ".";
+                detail += " This usually means Dataverse has an older DLL for this assembly row.";
+            }
+            else
+            {
+                detail += " No plug-in types are currently registered for this assembly row.";
+            }
+
+            if (existingTypeNames.Length == 0)
+            {
+                var assemblyPath = string.IsNullOrWhiteSpace(options.AssemblyPath)
+                    ? "Ops.Plugins/bin/Release/net462/Ops.Plugins.dll"
+                    : options.AssemblyPath;
+
+                return detail + " Register the plug-in type first with:"
+                    + $" pac plugin push --pluginId {actual.Assembly.Id:D} --pluginFile {assemblyPath} --type Assembly"
+                    + ". Then rerun the sync.";
+            }
+
+            if (options.PushAssembly)
+                return detail + " The DLL was already pushed in this run; confirm the type is public, implements IPlugin, and the pushed DLL is the expected build.";
+
+            return detail + " " + PushAssemblyRecommendation;
         }
 
         private static IEnumerable<ActualStep> FindStageOrModeDrift(IEnumerable<ActualStep> actualSteps, DesiredStep desiredStep, RegistrationOptions options)

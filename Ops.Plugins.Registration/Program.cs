@@ -29,7 +29,7 @@ namespace Ops.Plugins.Registration
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("ERROR: " + ex.Message);
+                Console.Error.WriteLine("ERROR: " + ex.GetType().Name + ": " + ex.Message);
                 WriteInnerExceptions(ex.InnerException);
                 Console.Error.WriteLine("Use --help for examples.");
                 return 1;

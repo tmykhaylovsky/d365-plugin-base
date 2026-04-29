@@ -68,6 +68,43 @@ function Write-ApplyCommand {
     Write-Host ("  " + ($command -join " "))
 }
 
+function Get-CachedEnvironmentUrls {
+    $paths = @()
+    foreach ($relativePath in @(".claude", ".codex", ".local")) {
+        $fullPath = Join-Path $repoRoot $relativePath
+        if (Test-Path $fullPath) {
+            $paths += Get-ChildItem -Path $fullPath -Recurse -File -Include *.md,*.json,*.txt -ErrorAction SilentlyContinue
+        }
+    }
+
+    foreach ($relativePath in @("PAC_CLI.md", "Ops.Plugins.Registration\README.md", "Scripts\README.md")) {
+        $fullPath = Join-Path $repoRoot $relativePath
+        if (Test-Path $fullPath) {
+            $paths += Get-Item $fullPath
+        }
+    }
+
+    $urls = [System.Collections.Generic.List[string]]::new()
+    foreach ($path in $paths) {
+        $content = Get-Content -LiteralPath $path.FullName -Raw -ErrorAction SilentlyContinue
+        foreach ($match in [regex]::Matches($content, "https://[A-Za-z0-9-]+\.crm\.dynamics\.com")) {
+            $url = $match.Value
+            if ($url -notmatch "<|>|your-org|org\.crm" -and -not $urls.Contains($url)) {
+                $urls.Add($url)
+            }
+        }
+    }
+
+    return $urls | Sort-Object @{ Expression = { if ($_ -match "contoso") { 0 } else { 1 } } }, { $_ }
+}
+
+function Test-IsPlaceholderEnvironment {
+    param([string] $Value)
+
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $false }
+    return $Value -match "<|>" -or $Value -match "https://(your-)?org\.crm\.dynamics\.com/?$"
+}
+
 if ($Help) {
     Write-Host "Sync Dataverse plugin steps and images from code metadata."
     Write-Host ""
@@ -90,6 +127,21 @@ Push-Location $repoRoot
 try {
     if ([string]::IsNullOrWhiteSpace($Environment) -and [string]::IsNullOrWhiteSpace($ConnectionString)) {
         throw "Pass -Environment https://<org>.crm.dynamics.com or -ConnectionString <value-or-env-var>."
+    }
+
+    if (Test-IsPlaceholderEnvironment $Environment) {
+        $cachedUrls = @(Get-CachedEnvironmentUrls)
+        $message = "Replace the placeholder -Environment value '$Environment' with a real Dataverse URL."
+        if ($cachedUrls.Length -gt 0) {
+            $message += [Environment]::NewLine + "Cached suggestion: .\Scripts\Sync-PluginRegistration.ps1 -Environment $($cachedUrls[0])"
+            if ($Apply) { $message += " -Apply" }
+            if ($cachedUrls.Length -gt 1) {
+                $message += [Environment]::NewLine + "Other cached URLs: " + (($cachedUrls | Select-Object -Skip 1) -join ", ")
+            }
+        }
+
+        [Console]::Error.WriteLine($message)
+        exit 1
     }
 
     if (-not $NoBuild) {

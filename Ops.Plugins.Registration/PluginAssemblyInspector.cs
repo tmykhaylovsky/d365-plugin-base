@@ -26,14 +26,20 @@ namespace Ops.Plugins.Registration
             try
             {
                 var assembly = Assembly.LoadFrom(fullPath);
-                var pluginTypes = assembly.GetTypes()
+                var concretePluginTypes = assembly.GetTypes()
                     .Where(IsConcretePluginType)
                     .OrderBy(t => t.FullName, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                var pluginTypes = concretePluginTypes
                     .Select(ReadPluginType)
                     .Where(t => t.Steps.Any())
                     .ToArray();
 
-                return new DesiredRegistration(assembly.GetName().Name, pluginTypes);
+                return new DesiredRegistration(
+                    assembly.GetName().Name,
+                    pluginTypes,
+                    concretePluginTypes.Select(t => t.FullName).ToArray());
             }
             finally
             {

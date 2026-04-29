@@ -22,6 +22,8 @@ namespace Ops.Plugins.Registration
 
         public static class PluginTypeFields
         {
+            public const string FriendlyName = "friendlyname";
+            public const string Name = "name";
             public const string PluginAssemblyId = "pluginassemblyid";
             public const string PluginTypeId = "plugintypeid";
             public const string TypeName = "typename";

@@ -89,6 +89,9 @@ namespace Ops.Plugins.Registration
 
             if (string.IsNullOrWhiteSpace(ConnectionString) && string.IsNullOrWhiteSpace(EnvironmentUrl))
                 throw new ArgumentException("Provide --connectionString <value-or-env-var> or --environment <url>.");
+
+            if (string.IsNullOrWhiteSpace(ConnectionString) && IsPlaceholderEnvironmentUrl(EnvironmentUrl))
+                throw new ArgumentException(BuildPlaceholderEnvironmentMessage(EnvironmentUrl));
         }
 
         public void ValidateRunInUserContexts(DesiredRegistration desired)
@@ -138,6 +141,89 @@ namespace Ops.Plugins.Registration
 
             var debug = Path.Combine("Ops.Plugins", "bin", "Debug", "net462", "Ops.Plugins.dll");
             return debug;
+        }
+
+        private static bool IsPlaceholderEnvironmentUrl(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            return value.Contains("<")
+                || value.Contains(">")
+                || Regex.IsMatch(value, @"^https://(your-)?org\.crm\.dynamics\.com/?$", RegexOptions.IgnoreCase);
+        }
+
+        private static string BuildPlaceholderEnvironmentMessage(string environmentUrl)
+        {
+            var lines = new List<string>
+            {
+                "Replace the placeholder --environment value '" + environmentUrl + "' with a real Dataverse URL."
+            };
+
+            var cachedUrls = FindCachedEnvironmentUrls().ToArray();
+            if (cachedUrls.Length > 0)
+            {
+                lines.Add("Cached suggestion:");
+                lines.Add("  --environment " + cachedUrls[0]);
+                if (cachedUrls.Length > 1)
+                    lines.Add("Other cached URLs: " + string.Join(", ", cachedUrls.Skip(1)));
+            }
+
+            return string.Join(Environment.NewLine, lines);
+        }
+
+        private static IEnumerable<string> FindCachedEnvironmentUrls()
+        {
+            var root = FindRepoRoot(Environment.CurrentDirectory);
+            var paths = new List<string>();
+
+            foreach (var relativePath in new[] { ".claude", ".codex", ".local" })
+            {
+                var path = Path.Combine(root, relativePath);
+                if (Directory.Exists(path))
+                    paths.AddRange(Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
+                        .Where(IsTextLikeFile));
+            }
+
+            paths.AddRange(new[]
+            {
+                Path.Combine(root, "PAC_CLI.md"),
+                Path.Combine(root, "Ops.Plugins.Registration", "README.md"),
+                Path.Combine(root, "Scripts", "README.md")
+            }.Where(File.Exists));
+
+            return paths
+                .SelectMany(ReadEnvironmentUrls)
+                .Where(url => !IsPlaceholderEnvironmentUrl(url))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(url => url.IndexOf("contoso", StringComparison.OrdinalIgnoreCase) >= 0 ? 0 : 1)
+                .ThenBy(url => url, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static bool IsTextLikeFile(string path)
+        {
+            var extension = Path.GetExtension(path);
+            return string.Equals(extension, ".md", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static IEnumerable<string> ReadEnvironmentUrls(string path)
+        {
+            string content;
+            try
+            {
+                content = File.ReadAllText(path);
+            }
+            catch (IOException)
+            {
+                yield break;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                yield break;
+            }
+
+            foreach (Match match in Regex.Matches(content, @"https://[A-Za-z0-9-]+\.crm\.dynamics\.com", RegexOptions.IgnoreCase))
+                yield return match.Value;
         }
 
         private void LoadUserAliases()

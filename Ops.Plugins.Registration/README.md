@@ -22,6 +22,24 @@ binary from the DLL before comparing step metadata:
 .\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -PushAssembly -Apply
 ```
 
+In `-Apply` mode, the tool automatically pushes the assembly when the only
+blocking issue is that Dataverse has not registered a plug-in type that exists in
+the current DLL. The push still performs the stale-type preflight described below.
+
+Use `-PushAssembly` when the `pluginassembly` row already exists but Dataverse
+still shows older plug-in types under it. For example, if the assembly is
+`Ops.Plugins` but the only registered type is `Ops.Plugins.OpportunityWonPlugin`
+and the current DLL now contains a different plug-in class, the assembly binary
+must be pushed before the sync can create/update steps for the new type. After
+the push, old steps/images are reported as extras; the tool does not delete them.
+
+If Dataverse has registered plug-in types that are missing from the current DLL,
+the tool stops before pushing assembly content and lists the stale type plus its
+dependent steps/images. Review and retire those registrations manually in
+Dataverse, then rerun the sync. This avoids silently deleting production behavior
+or leaving Dataverse with steps that point to a class no longer present in the
+assembly.
+
 The lower-level console can still be run directly:
 
 ```powershell
@@ -40,7 +58,7 @@ Add `--apply` after reviewing the dry-run. Add `--pushAssembly` when you also wa
 Prefer a user environment variable containing a Dataverse connection string for repeatable runs:
 
 ```powershell
-setx DATAVERSE_CONNECTION_QLAPROD "AuthType=OAuth;Url=https://<org>.crm.dynamics.com;LoginPrompt=Auto"
+setx DATAVERSE_CONNECTION_CONTOSO "AuthType=OAuth;Url=https://contoso.crm.dynamics.com;ClientId=51f81489-12ee-4a9e-aaae-a2591f45987d;RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;LoginPrompt=Auto"
 ```
 
 PAC auth profiles can expire or become unreadable. If `pac modelbuilder` or `pac plugin push` fails with token-cache or refresh-token errors, create a fresh device-code profile:
@@ -135,6 +153,10 @@ updates safe drift fields such as rank, filtering attributes, description, Run i
 User's Context, image message property, and image attributes. It reports extras,
 disabled steps, managed rows, and unsecure configuration rather than silently
 changing or deleting them.
+
+`-PushAssembly` also performs a preflight check for stale registered plug-in
+types. If an existing type is no longer present in the DLL, the push is blocked
+and the dependent step/image inventory is printed for manual review.
 
 ## Image Update Findings
 

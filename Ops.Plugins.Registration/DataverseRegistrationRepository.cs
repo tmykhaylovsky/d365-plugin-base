@@ -15,6 +15,9 @@ namespace Ops.Plugins.Registration
 {
     public class DataverseRegistrationRepository
     {
+        private const string DefaultOAuthClientId = "51f81489-12ee-4a9e-aaae-a2591f45987d";
+        private const string DefaultOAuthRedirectUri = "app://58145B91-0C36-4500-8554-080854F2AC97";
+
         private readonly IOrganizationService _service;
         private readonly Dictionary<string, Entity> _messageCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, Entity> _filterCache = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
@@ -30,19 +33,35 @@ namespace Ops.Plugins.Registration
         public static DataverseRegistrationRepository Create(RegistrationOptions options)
         {
             ServiceClient client;
-            if (!string.IsNullOrWhiteSpace(options.ConnectionString))
+            try
             {
-                client = new ServiceClient(options.ConnectionString);
+                if (!string.IsNullOrWhiteSpace(options.ConnectionString))
+                {
+                    client = new ServiceClient(options.ConnectionString);
+                }
+                else
+                {
+                    client = new ServiceClient(BuildInteractiveOAuthConnectionString(options.EnvironmentUrl));
+                }
             }
-            else
+            catch (Exception ex)
             {
-                client = new ServiceClient($"AuthType=OAuth;Url={options.EnvironmentUrl};LoginPrompt=Auto");
+                throw new InvalidOperationException(BuildConnectionFailureMessage(null, options), ex);
             }
 
             if (!client.IsReady)
                 throw new InvalidOperationException(BuildConnectionFailureMessage(client, options), client.LastException);
 
             return new DataverseRegistrationRepository(client);
+        }
+
+        private static string BuildInteractiveOAuthConnectionString(string environmentUrl)
+        {
+            return "AuthType=OAuth"
+                + ";Url=" + environmentUrl
+                + ";ClientId=" + DefaultOAuthClientId
+                + ";RedirectUri=" + DefaultOAuthRedirectUri
+                + ";LoginPrompt=Auto";
         }
 
         private static string BuildConnectionFailureMessage(ServiceClient client, RegistrationOptions options)
@@ -56,10 +75,10 @@ namespace Ops.Plugins.Registration
                 lines.Add("Environment: " + options.EnvironmentUrl);
             if (!string.IsNullOrWhiteSpace(options.ConnectionString))
                 lines.Add("Connection: " + DescribeConnectionString(options.ConnectionString));
-            if (!string.IsNullOrWhiteSpace(client.LastError))
+            if (!string.IsNullOrWhiteSpace(client?.LastError))
                 lines.Add("SDK error: " + client.LastError);
 
-            var exception = client.LastException;
+            var exception = client?.LastException;
             var depth = 0;
             while (exception != null && depth < 6)
             {
@@ -71,7 +90,7 @@ namespace Ops.Plugins.Registration
             }
 
             lines.Add("Auth tips: if browser/device auth failed, retry once. If it still fails, create/use a connection string env var, for example:");
-            lines.Add("  setx DATAVERSE_CONNECTION \"AuthType=OAuth;Url=https://<org>.crm.dynamics.com;LoginPrompt=Auto\"");
+            lines.Add("  setx DATAVERSE_CONNECTION \"AuthType=OAuth;Url=https://<org>.crm.dynamics.com;ClientId=51f81489-12ee-4a9e-aaae-a2591f45987d;RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;LoginPrompt=Auto\"");
             lines.Add("  .\\Scripts\\Sync-PluginRegistration.ps1 -ConnectionString DATAVERSE_CONNECTION");
 
             return string.Join(Environment.NewLine, lines);
@@ -178,6 +197,19 @@ namespace Ops.Plugins.Registration
             update[RegistrationEntityNames.PluginAssemblyFields.PublicKeyToken] = PublicKeyTokenToString(assemblyName.GetPublicKeyToken());
             update[RegistrationEntityNames.PluginAssemblyFields.Culture] = string.IsNullOrWhiteSpace(assemblyName.CultureName) ? "neutral" : assemblyName.CultureName;
             _service.Update(update);
+        }
+
+        public virtual void CreatePluginTypes(Guid pluginAssemblyId, IEnumerable<DesiredPluginType> desiredPluginTypes)
+        {
+            foreach (var desiredPluginType in desiredPluginTypes.OrderBy(t => t.TypeName, StringComparer.OrdinalIgnoreCase))
+            {
+                var entity = new Entity(RegistrationEntityNames.PluginType);
+                entity[RegistrationEntityNames.PluginTypeFields.PluginAssemblyId] = new EntityReference(RegistrationEntityNames.PluginAssembly, pluginAssemblyId);
+                entity[RegistrationEntityNames.PluginTypeFields.TypeName] = desiredPluginType.TypeName;
+                entity[RegistrationEntityNames.PluginTypeFields.Name] = desiredPluginType.TypeName;
+                entity[RegistrationEntityNames.PluginTypeFields.FriendlyName] = desiredPluginType.TypeName;
+                _service.Create(entity);
+            }
         }
 
         private ActualPluginAssembly FindAssembly(DesiredRegistration desired, RegistrationOptions options)

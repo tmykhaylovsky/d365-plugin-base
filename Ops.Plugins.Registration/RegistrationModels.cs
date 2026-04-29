@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xrm.Sdk;
 
 namespace Ops.Plugins.Registration
@@ -25,13 +26,20 @@ namespace Ops.Plugins.Registration
     public sealed class DesiredRegistration
     {
         public DesiredRegistration(string assemblyName, IReadOnlyCollection<DesiredPluginType> pluginTypes)
+            : this(assemblyName, pluginTypes, pluginTypes == null ? Array.Empty<string>() : pluginTypes.Select(t => t.TypeName).ToArray())
+        {
+        }
+
+        public DesiredRegistration(string assemblyName, IReadOnlyCollection<DesiredPluginType> pluginTypes, IReadOnlyCollection<string> pluginTypeNamesInAssembly)
         {
             AssemblyName = assemblyName;
             PluginTypes = pluginTypes;
+            PluginTypeNamesInAssembly = pluginTypeNamesInAssembly ?? Array.Empty<string>();
         }
 
         public string AssemblyName { get; }
         public IReadOnlyCollection<DesiredPluginType> PluginTypes { get; }
+        public IReadOnlyCollection<string> PluginTypeNamesInAssembly { get; }
     }
 
     public sealed class DesiredPluginType

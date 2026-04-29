@@ -25,7 +25,7 @@ For the registration sync tool, prefer either interactive `--environment <url>` 
 a user environment variable containing a connection string:
 
 ```powershell
-setx DATAVERSE_CONNECTION_QLAPROD "AuthType=OAuth;Url=https://qlaprod.crm.dynamics.com;LoginPrompt=Auto"
+setx DATAVERSE_CONNECTION_CONTOSO "AuthType=OAuth;Url=https://contoso.crm.dynamics.com;ClientId=51f81489-12ee-4a9e-aaae-a2591f45987d;RedirectUri=app://58145B91-0C36-4500-8554-080854F2AC97;LoginPrompt=Auto"
 ```
 
 Ignored repo-local notes can live under `.claude/`, but keep only URLs, command
@@ -77,6 +77,20 @@ Apply and update the matched plugin assembly binary in one command:
 ```powershell
 .\Scripts\Sync-PluginRegistration.ps1 -Environment https://<your-org>.crm.dynamics.com -PushAssembly -Apply
 ```
+
+In `-Apply` mode, the sync can automatically push the assembly when the only
+blocking issue is a plug-in type that exists in the current DLL but is not yet
+registered in Dataverse.
+
+Use `-PushAssembly` when Dataverse already has the `pluginassembly` row but its
+registered plug-in types are from an older DLL. The sync will push the current
+DLL first, then compare step/image metadata. Old steps/images are reported as
+extras for manual cleanup; they are not deleted automatically.
+
+If an existing registered plug-in type is missing from the current DLL, the sync
+stops before uploading the assembly and prints the stale type plus dependent
+step/image counts. Review and retire those Dataverse registrations manually, then
+rerun the command.
 
 The lower-level console command is also available:
 

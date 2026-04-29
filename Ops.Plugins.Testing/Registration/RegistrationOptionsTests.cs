@@ -49,6 +49,34 @@ namespace Ops.Plugins.Testing.Registration
             Assert.Contains(RunInUserContext.SystemAdmin, ex.Message);
         }
 
+        [Theory]
+        [InlineData("https://<org>.crm.dynamics.com")]
+        [InlineData("https://<your-org>.crm.dynamics.com")]
+        [InlineData("https://org.crm.dynamics.com")]
+        [InlineData("https://your-org.crm.dynamics.com")]
+        public void ValidateForRun_RejectsPlaceholderEnvironmentUrl(string environmentUrl)
+        {
+            var assemblyPath = WriteTempJson("{}");
+            var options = new RegistrationOptions
+            {
+                AssemblyPath = assemblyPath,
+                EnvironmentUrl = environmentUrl
+            };
+
+            try
+            {
+                var ex = Assert.Throws<ArgumentException>(() => options.ValidateForRun());
+
+                Assert.Contains("placeholder", ex.Message);
+                Assert.Contains(environmentUrl, ex.Message);
+                Assert.Contains("https://contoso.crm.dynamics.com", ex.Message);
+            }
+            finally
+            {
+                File.Delete(assemblyPath);
+            }
+        }
+
         private static string WriteTempJson(string content)
         {
             var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".json");

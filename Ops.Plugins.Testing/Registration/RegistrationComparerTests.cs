@@ -90,6 +90,119 @@ namespace Ops.Plugins.Testing.Registration
             Assert.Contains(plan.Changes, c => c.Action == RegistrationActionKind.Warning && c.Detail.Contains("disabled"));
         }
 
+        [Fact]
+        public void Compare_ExplainsStalePluginTypeWhenAssemblyHasOlderType()
+        {
+            var desired = Desired();
+            var actual = Actual(
+                Array.Empty<ActualStep>(),
+                Array.Empty<ActualImage>(),
+                new Dictionary<string, ActualPluginType>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Ops.Plugins.OpportunityWonPlugin"] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = "Ops.Plugins.OpportunityWonPlugin" }
+                });
+
+            var plan = Compare(desired, actual);
+
+            var error = Assert.Single(plan.Changes.Where(c => c.Action == RegistrationActionKind.Error && c.Target == RegistrationTargetKind.PluginType));
+            Assert.Contains("OpportunityWonPlugin", error.Detail);
+            Assert.Contains("older DLL", error.Detail);
+            Assert.Contains("-PushAssembly", error.Detail);
+            Assert.True(new RegistrationComparer().CanResolveByPushingAssembly(plan));
+        }
+
+        [Fact]
+        public void Compare_WhenPushAssemblyWasRequestedExplainsMissingTypeAfterPush()
+        {
+            var desired = Desired();
+            var actual = Actual(
+                Array.Empty<ActualStep>(),
+                Array.Empty<ActualImage>(),
+                new Dictionary<string, ActualPluginType>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Ops.Plugins.OpportunityWonPlugin"] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = "Ops.Plugins.OpportunityWonPlugin" }
+                });
+
+            var plan = new RegistrationComparer().Compare(desired, actual, new RegistrationOptions { PushAssembly = true });
+
+            var error = Assert.Single(plan.Changes.Where(c => c.Action == RegistrationActionKind.Error && c.Target == RegistrationTargetKind.PluginType));
+            Assert.Contains("already pushed", error.Detail);
+            Assert.Contains("implements IPlugin", error.Detail);
+        }
+
+        [Fact]
+        public void Compare_WhenAssemblyHasNoPluginTypesRecommendsPacPluginPush()
+        {
+            var desired = Desired();
+            var actual = Actual(
+                Array.Empty<ActualStep>(),
+                Array.Empty<ActualImage>(),
+                new Dictionary<string, ActualPluginType>(StringComparer.OrdinalIgnoreCase));
+
+            var plan = new RegistrationComparer().Compare(desired, actual, new RegistrationOptions { AssemblyPath = "Ops.Plugins/bin/Release/net462/Ops.Plugins.dll" });
+
+            var error = Assert.Single(plan.Changes.Where(c => c.Action == RegistrationActionKind.Error && c.Target == RegistrationTargetKind.PluginType));
+            Assert.Contains("No plug-in types are currently registered", error.Detail);
+            Assert.Contains("pac plugin push", error.Detail);
+            Assert.Contains(actual.Assembly.Id.ToString("D"), error.Detail);
+            Assert.False(new RegistrationComparer().CanResolveByPushingAssembly(plan));
+        }
+
+        [Fact]
+        public void ComparePushAssemblyReadiness_BlocksStalePluginTypeWithDependentStepAndImages()
+        {
+            var desired = Desired();
+            var staleTypeName = "Ops.Plugins.OpportunityWonPlugin";
+            var staleStep = MatchingStep(pluginTypeName: staleTypeName);
+            var images = new[]
+            {
+                MatchingImage(staleStep, attributes: ExpectedImageAttributes()),
+                new ActualImage
+                {
+                    Id = Guid.NewGuid(),
+                    StepId = staleStep.Id,
+                    StepKey = staleStep.Key,
+                    Alias = PluginImageNames.PostImage,
+                    ImageType = 1,
+                    MessagePropertyName = SdkMessagePropertyNames.Target,
+                    Attributes = AttributeList.Parse(AccountFields.Name)
+                }
+            };
+            var actual = Actual(
+                new[] { staleStep },
+                images,
+                new Dictionary<string, ActualPluginType>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [PluginTypeName] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = PluginTypeName },
+                    [staleTypeName] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = staleTypeName }
+                });
+
+            var plan = new RegistrationComparer().ComparePushAssemblyReadiness(desired, actual);
+
+            var error = Assert.Single(plan.Changes);
+            Assert.Equal(RegistrationActionKind.Error, error.Action);
+            Assert.Equal(RegistrationTargetKind.PluginType, error.Target);
+            Assert.Equal(staleTypeName, error.PluginTypeName);
+            Assert.Contains("missing from the current DLL", error.Detail);
+            Assert.Contains("1 step(s), 2 image(s)", error.Detail);
+            Assert.Contains("Enabled step(s): 1", error.Detail);
+            Assert.Contains("PostOperation synchronous enabled", error.Detail);
+            Assert.DoesNotContain("stage 40 mode 0", error.Detail);
+            Assert.Contains("Manual review required", error.Detail);
+            Assert.False(new RegistrationComparer().CanResolveByPushingAssembly(plan));
+        }
+
+        [Fact]
+        public void ComparePushAssemblyReadiness_AllowsRegisteredTypesStillPresentInDll()
+        {
+            var desired = Desired();
+            var actual = Actual(Array.Empty<ActualStep>(), Array.Empty<ActualImage>());
+
+            var plan = new RegistrationComparer().ComparePushAssemblyReadiness(desired, actual);
+
+            Assert.Equal(0, plan.Errors);
+        }
+
         private static RegistrationPlan Compare(DesiredRegistration desired, ActualRegistration actual)
         {
             return new RegistrationComparer().Compare(desired, actual, new RegistrationOptions());
@@ -131,22 +244,33 @@ namespace Ops.Plugins.Testing.Registration
 
         private static ActualRegistration Actual(IReadOnlyCollection<ActualStep> steps, IReadOnlyCollection<ActualImage> images)
         {
-            return new ActualRegistration(
-                new ActualPluginAssembly { Id = Guid.NewGuid(), Name = PluginAssemblyName },
+            return Actual(
+                steps,
+                images,
                 new Dictionary<string, ActualPluginType>(StringComparer.OrdinalIgnoreCase)
                 {
                     [PluginTypeName] = new ActualPluginType { Id = Guid.NewGuid(), TypeName = PluginTypeName }
-                },
+                });
+        }
+
+        private static ActualRegistration Actual(
+            IReadOnlyCollection<ActualStep> steps,
+            IReadOnlyCollection<ActualImage> images,
+            IReadOnlyDictionary<string, ActualPluginType> pluginTypes)
+        {
+            return new ActualRegistration(
+                new ActualPluginAssembly { Id = Guid.NewGuid(), Name = PluginAssemblyName },
+                pluginTypes,
                 steps,
                 images);
         }
 
-        private static ActualStep MatchingStep(string message = null, string filteringAttributes = null)
+        private static ActualStep MatchingStep(string message = null, string filteringAttributes = null, string pluginTypeName = null)
         {
             return new ActualStep
             {
                 Id = Guid.NewGuid(),
-                PluginTypeName = PluginTypeName,
+                PluginTypeName = pluginTypeName ?? PluginTypeName,
                 PluginTypeId = Guid.NewGuid(),
                 MessageName = message ?? Messages.Update,
                 EntityLogicalName = Account.EntityLogicalName,
