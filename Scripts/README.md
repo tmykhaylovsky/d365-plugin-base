@@ -18,11 +18,18 @@ Typical usage from the repository root:
 ```powershell
 .\Scripts\Rename-SolutionPrefix.ps1 -NewPrefix Contoso
 .\Scripts\Rename-SolutionPrefix.ps1 -NewPrefix Contoso -Apply
+
 .\Scripts\New-PluginSigningKey.ps1 -ProjectPath .\Ops.Plugins\Ops.Plugins.csproj
+
+.\Scripts\Set-RunInUserContext.ps1 -SystemAdminId 00000000-0000-0000-0000-000000000001 -SystemAdminFullName "System Admin" -SystemAdmin2Id 00000000-0000-0000-0000-000000000002 -SystemAdmin2FullName "System Admin 2"
+
 .\Scripts\Update-EarlyBoundModel.ps1
 .\Scripts\Update-EarlyBoundModel.ps1 -Environment https://<org>.crm.dynamics.com
+
 .\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com
 .\Scripts\Sync-PluginRegistration.ps1 -Environment https://<org>.crm.dynamics.com -Apply
 ```
 
 `Rename-SolutionPrefix.ps1` only targets `Ops.`-style prefixes by default. Use `-ReplaceStandalonePrefix` only when standalone `Ops` identifiers should also be changed.
+
+`Set-RunInUserContext.ps1` is commonly run after cloning or when changing test users. It writes `.local/run-in-user-context.json`, which stays local to your machine.
