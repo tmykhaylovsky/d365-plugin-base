@@ -149,8 +149,8 @@ Use late-bound SDK entities for registration rows:
 ## Safety
 
 The sync is intentionally conservative. It creates missing steps/images and
-updates safe drift fields such as rank, filtering attributes, description, Run in
-User's Context, image message property, and image attributes. It reports extras,
+updates safe drift fields such as name, rank, filtering attributes, description,
+Run in User's Context, image message property, and image attributes. It reports extras,
 disabled steps, managed rows, and unsecure configuration rather than silently
 changing or deleting them.
 

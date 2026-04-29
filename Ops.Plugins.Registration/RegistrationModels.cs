@@ -117,6 +117,7 @@ namespace Ops.Plugins.Registration
     public sealed class ActualStep
     {
         public Guid Id { get; set; }
+        public string Name { get; set; }
         public string PluginTypeName { get; set; }
         public Guid PluginTypeId { get; set; }
         public Guid MessageId { get; set; }

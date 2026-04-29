@@ -285,6 +285,7 @@ namespace Ops.Plugins.Registration
             {
                 ColumnSet = new ColumnSet(
                     RegistrationEntityNames.StepFields.SdkMessageProcessingStepId,
+                    RegistrationEntityNames.StepFields.Name,
                     RegistrationEntityNames.StepFields.EventHandler,
                     RegistrationEntityNames.StepFields.SdkMessageId,
                     RegistrationEntityNames.StepFields.SdkMessageFilterId,
@@ -315,6 +316,7 @@ namespace Ops.Plugins.Registration
                 steps.Add(new ActualStep
                 {
                     Id = row.Id,
+                    Name = row.GetAttributeValue<string>(RegistrationEntityNames.StepFields.Name),
                     PluginTypeId = pluginTypeRef.Id,
                     PluginTypeName = typeById[pluginTypeRef.Id].TypeName,
                     MessageId = messageRef == null ? Guid.Empty : messageRef.Id,
@@ -384,7 +386,6 @@ namespace Ops.Plugins.Registration
                 var filter = GetFilter(message.Id, desired.EntityLogicalName);
                 var runAsUserId = ResolveRunInUserContext(desired.RunInUserContext);
                 var entity = new Entity(RegistrationEntityNames.SdkMessageProcessingStep);
-                entity[RegistrationEntityNames.StepFields.Name] = $"{desired.PluginTypeName}: {desired.MessageName} of {desired.EntityLogicalName}";
                 entity[RegistrationEntityNames.StepFields.EventHandler] = new EntityReference(RegistrationEntityNames.PluginType, pluginType.Id);
                 entity[RegistrationEntityNames.StepFields.SdkMessageId] = new EntityReference(RegistrationEntityNames.SdkMessage, message.Id);
                 if (filter != null) entity[RegistrationEntityNames.StepFields.SdkMessageFilterId] = new EntityReference(RegistrationEntityNames.SdkMessageFilter, filter.Id);
@@ -419,6 +420,7 @@ namespace Ops.Plugins.Registration
 
         private void SetStepFields(Entity entity, DesiredStep desired, Guid? runAsUserId)
         {
+            entity[RegistrationEntityNames.StepFields.Name] = RegistrationStepNames.For(desired);
             entity[RegistrationEntityNames.StepFields.Stage] = new OptionSetValue(desired.Stage);
             entity[RegistrationEntityNames.StepFields.Mode] = new OptionSetValue(desired.Mode);
             entity[RegistrationEntityNames.StepFields.Rank] = desired.Rank;

@@ -44,6 +44,7 @@ namespace Ops.Plugins.Registration
                 .GroupBy(s => s.Key, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(g => g.Key, g => g.ToArray(), StringComparer.OrdinalIgnoreCase);
             var desiredSteps = desired.PluginTypes.SelectMany(t => t.Steps).OrderBy(s => s.PluginTypeName).ThenBy(s => s.MessageName).ThenBy(s => s.EntityLogicalName).ToArray();
+            var desiredStepKeys = new HashSet<string>(desiredSteps.Select(s => s.Key), StringComparer.OrdinalIgnoreCase);
 
             foreach (var desiredStep in desiredSteps)
             {
@@ -66,7 +67,7 @@ namespace Ops.Plugins.Registration
 
                 if (matches.Length == 0)
                 {
-                    matches = FindStageOrModeDrift(actual.Steps, desiredStep, options).ToArray();
+                    matches = FindStageOrModeDrift(actual.Steps, desiredStep, desiredStepKeys).ToArray();
                     if (matches.Length > 1)
                     {
                         changes.Add(Change(RegistrationActionKind.Error, RegistrationTargetKind.Step, desiredStep, matches[0], "Multiple same plug-in/message/entity steps found with different stage or mode; manual cleanup required before apply."));
@@ -203,18 +204,22 @@ namespace Ops.Plugins.Registration
             return detail + " " + PushAssemblyRecommendation;
         }
 
-        private static IEnumerable<ActualStep> FindStageOrModeDrift(IEnumerable<ActualStep> actualSteps, DesiredStep desiredStep, RegistrationOptions options)
+        private static IEnumerable<ActualStep> FindStageOrModeDrift(IEnumerable<ActualStep> actualSteps, DesiredStep desiredStep, ISet<string> desiredStepKeys)
         {
             return actualSteps.Where(s =>
                 string.Equals(s.PluginTypeName, desiredStep.PluginTypeName, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(s.MessageName, desiredStep.MessageName, StringComparison.OrdinalIgnoreCase)
                 && string.Equals(s.EntityLogicalName ?? string.Empty, desiredStep.EntityLogicalName ?? string.Empty, StringComparison.OrdinalIgnoreCase)
-                && (s.Stage != desiredStep.Stage || s.Mode != desiredStep.Mode));
+                && (s.Stage != desiredStep.Stage || s.Mode != desiredStep.Mode)
+                && !desiredStepKeys.Contains(s.Key));
         }
 
         private static void AddStepComparison(List<RegistrationChange> changes, DesiredStep desired, ActualStep actual, RegistrationOptions options)
         {
             var diffs = new List<string>();
+            var desiredName = RegistrationStepNames.For(desired);
+            if (!string.Equals(desiredName, actual.Name, StringComparison.Ordinal))
+                diffs.Add($"name: \"{actual.Name}\" -> \"{desiredName}\"");
             if (desired.Rank != actual.Rank) diffs.Add($"rank: {actual.Rank} -> {desired.Rank}");
             if (!desired.FilteringAttributes.SetEquals(actual.FilteringAttributes))
                 diffs.Add($"filteringattributes: \"{actual.FilteringAttributes}\" -> \"{desired.FilteringAttributes}\"");

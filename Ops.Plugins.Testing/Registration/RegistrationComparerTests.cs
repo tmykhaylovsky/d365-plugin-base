@@ -15,6 +15,7 @@ namespace Ops.Plugins.Testing.Registration
     public class RegistrationComparerTests
     {
         private const int PreImageType = 0;
+        private const int PostImageType = 1;
         private const int PostOperationStage = (int)PluginBase.PluginStage.PostOperation;
         private const int PreOperationStage = (int)PluginBase.PluginStage.PreOperation;
         private const int EnabledState = 0;
@@ -51,6 +52,19 @@ namespace Ops.Plugins.Testing.Registration
         }
 
         [Fact]
+        public void Compare_UpdatesStepNameDrift()
+        {
+            var desired = Desired();
+            var step = MatchingStep();
+            step.Name += " asdf";
+            var image = MatchingImage(step, attributes: ExpectedImageAttributes());
+
+            var plan = Compare(desired, Actual(new[] { step }, new[] { image }));
+
+            Assert.Contains(plan.Changes, c => c.Action == RegistrationActionKind.Update && c.Target == RegistrationTargetKind.Step && c.Detail.Contains("name:"));
+        }
+
+        [Fact]
         public void Compare_ReportsExtrasWithoutDeleting()
         {
             var desired = Desired();
@@ -74,6 +88,30 @@ namespace Ops.Plugins.Testing.Registration
 
             Assert.Contains(plan.Changes, c => c.Action == RegistrationActionKind.Update && c.Target == RegistrationTargetKind.Step && c.Detail.Contains("stage/mode"));
             Assert.DoesNotContain(plan.Changes, c => c.Action == RegistrationActionKind.Create);
+        }
+
+        [Fact]
+        public void Compare_WhenOneOfTwoSameMessageStepsIsMissingCreatesMissingStepWithoutReusingSibling()
+        {
+            var desired = DesiredTwoUpdateSteps();
+            var preStep = MatchingStep(filteringAttributes: AccountFields.AccountNumber);
+            preStep.Stage = PreOperationStage;
+            var preImage = new ActualImage
+            {
+                Id = Guid.NewGuid(),
+                StepId = preStep.Id,
+                StepKey = preStep.Key,
+                Alias = PluginImageNames.PreImage,
+                ImageType = PreImageType,
+                MessagePropertyName = SdkMessagePropertyNames.Target,
+                Attributes = AttributeList.Parse(AccountFields.AccountNumber)
+            };
+
+            var plan = Compare(desired, Actual(new[] { preStep }, new[] { preImage }));
+
+            Assert.Contains(plan.Changes, c => c.Action == RegistrationActionKind.Create && c.Target == RegistrationTargetKind.Step && c.DesiredStep.Stage == PostOperationStage);
+            Assert.Contains(plan.Changes, c => c.Action == RegistrationActionKind.Create && c.Target == RegistrationTargetKind.Image && c.DesiredImage.Alias == PluginImageNames.PostImage);
+            Assert.DoesNotContain(plan.Changes, c => c.Action == RegistrationActionKind.Update && c.Target == RegistrationTargetKind.Step && c.ActualStep.Id == preStep.Id);
         }
 
         [Fact]
@@ -242,6 +280,61 @@ namespace Ops.Plugins.Testing.Registration
             return new DesiredRegistration(PluginAssemblyName, new[] { new DesiredPluginType(step.PluginTypeName, new[] { step }) });
         }
 
+        private static DesiredRegistration DesiredTwoUpdateSteps()
+        {
+            var preImage = new DesiredImage
+            {
+                PluginTypeName = PluginTypeName,
+                MessageName = Messages.Update,
+                EntityLogicalName = Account.EntityLogicalName,
+                StepStage = PreOperationStage,
+                StepMode = (int)SdkMessageProcessingStepMode.Synchronous,
+                Alias = PluginImageNames.PreImage,
+                ImageType = PreImageType,
+                MessagePropertyName = SdkMessagePropertyNames.Target,
+                Attributes = AttributeList.Parse(AccountFields.AccountNumber)
+            };
+
+            var postImage = new DesiredImage
+            {
+                PluginTypeName = PluginTypeName,
+                MessageName = Messages.Update,
+                EntityLogicalName = Account.EntityLogicalName,
+                StepStage = PostOperationStage,
+                StepMode = (int)SdkMessageProcessingStepMode.Synchronous,
+                Alias = PluginImageNames.PostImage,
+                ImageType = PostImageType,
+                MessagePropertyName = SdkMessagePropertyNames.Target,
+                Attributes = AttributeList.From(new[] { AccountFields.Name, AccountFields.Telephone1 })
+            };
+
+            var preStep = new DesiredStep
+            {
+                PluginTypeName = PluginTypeName,
+                MessageName = Messages.Update,
+                EntityLogicalName = Account.EntityLogicalName,
+                Stage = PreOperationStage,
+                Mode = (int)SdkMessageProcessingStepMode.Synchronous,
+                Rank = 1,
+                FilteringAttributes = AttributeList.Parse(AccountFields.AccountNumber),
+                Images = new[] { preImage }
+            };
+
+            var postStep = new DesiredStep
+            {
+                PluginTypeName = PluginTypeName,
+                MessageName = Messages.Update,
+                EntityLogicalName = Account.EntityLogicalName,
+                Stage = PostOperationStage,
+                Mode = (int)SdkMessageProcessingStepMode.Synchronous,
+                Rank = 1,
+                FilteringAttributes = AttributeList.From(new[] { AccountFields.Name, AccountFields.Telephone1 }),
+                Images = new[] { postImage }
+            };
+
+            return new DesiredRegistration(PluginAssemblyName, new[] { new DesiredPluginType(PluginTypeName, new[] { preStep, postStep }) });
+        }
+
         private static ActualRegistration Actual(IReadOnlyCollection<ActualStep> steps, IReadOnlyCollection<ActualImage> images)
         {
             return Actual(
@@ -270,6 +363,7 @@ namespace Ops.Plugins.Testing.Registration
             return new ActualStep
             {
                 Id = Guid.NewGuid(),
+                Name = $"{pluginTypeName ?? PluginTypeName}: {message ?? Messages.Update} of {Account.EntityLogicalName}",
                 PluginTypeName = pluginTypeName ?? PluginTypeName,
                 PluginTypeId = Guid.NewGuid(),
                 MessageName = message ?? Messages.Update,
