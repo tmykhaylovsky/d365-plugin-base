@@ -11,6 +11,8 @@ Ops.Plugins.Registration/ console registration sync tool
 Ops.Plugins.Shared/      shared plugin base source imported by the plugin assembly
 Ops.Plugins.Model/       early-bound model shared project imported by the plugin assembly
 Ops.Plugins.Testing/     xUnit/FakeXrmEasy test project
+Ops.Plugins.Tools/       optional Windows launcher for script-backed workflows
+Scripts/                 setup, model, deployment, registration, and strip helpers
 ```
 
 ## Open, Build, And Test
@@ -41,13 +43,13 @@ These notes reflect the local Windows validation path for this repo:
 Build the deployable signed DLL with:
 
 ```powershell
-dotnet build Ops.Plugins/Ops.Plugins.csproj -c Release
+dotnet build Ops.Plugins/Ops.Plugins.csproj -c Debug
 ```
 
 The signed assembly is emitted at:
 
 ```text
-Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
+Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll
 ```
 
 ## Projects
@@ -59,10 +61,17 @@ Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
 | `Ops.Plugins.Shared` | Visual Studio shared project for `PluginBase`, logging, formatting, extensions, and FetchXML builders. It does not produce a DLL. |
 | `Ops.Plugins.Model` | Visual Studio shared project for early-bound Dataverse model code. It does not produce a DLL. |
 | `Ops.Plugins.Testing` | xUnit test project using FakeXrmEasy. It references only `Ops.Plugins.csproj` among local projects. |
+| `Ops.Plugins.Tools` | Optional `net8.0-windows` WPF launcher that reads `Scripts/script-catalog.json`, guides PAC setup, previews script commands, and hides actions whose scripts are absent. |
 
 ## Best Practices
 
 See [`BEST_PRACTICES.md`](BEST_PRACTICES.md) for plugin authoring, registration, testing, shared project, model regeneration, logging, and deployment conventions.
+
+## GUI Launcher And Script Fallback
+
+On Windows, use `Ops.Plugins.Tools` for the guided workflow when it is present. The launcher reads `Scripts/script-catalog.json`, stores only non-secret environment names/URLs under `.local`, and runs the same PowerShell scripts documented in [`Scripts/README.md`](Scripts/README.md).
+
+The command-line scripts remain the source of truth for automation, stripped starters, and non-Windows workflows. Use `Scripts/README.md` for fallback commands covering setup, PAC authentication, model generation, deployment, and optional registration sync.
 
 ## Deploying The Plugin DLL
 

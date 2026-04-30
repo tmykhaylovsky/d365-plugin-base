@@ -22,29 +22,32 @@ namespace Ops.Plugins
 
             var profileAttributes = new[] { AccountFields.Name, AccountFields.Telephone1 };
 
-            yield return new RegisteredEvent(
-                PluginStage.PreOperation,
-                SdkMessageProcessingStepMode.Synchronous,
-                Messages.Update,
-                Account.EntityLogicalName,
-                AccountPreOpUpdateSync,
-                requiredPreImageName: PluginImageNames.PreImage,
-                filteringAttributes: identityAttributes,
-                preImageAttributes: identityAttributes,
-                runInUserContext: RunInUserContext.CallingUser,
-                stepDescription: "Protects assigned account numbers before update.");
+            return new[]
+            {
+                new RegisteredEvent(
+                    PluginStage.PreOperation,
+                    SdkMessageProcessingStepMode.Synchronous,
+                    Messages.Update,
+                    Account.EntityLogicalName,
+                    AccountPreOpUpdateSync,
+                    requiredPreImageName: PluginImageNames.PreImage,
+                    filteringAttributes: identityAttributes,
+                    preImageAttributes: identityAttributes,
+                    runInUserContext: RunInUserContext.CallingUser,
+                    stepDescription: "Protects assigned account numbers before update."),
 
-            yield return new RegisteredEvent(
-                PluginStage.PostOperation,
-                SdkMessageProcessingStepMode.Synchronous,
-                Messages.Update,
-                Account.EntityLogicalName,
-                AccountPostOpUpdateSync,
-                requiredPostImageName: PluginImageNames.PostImage,
-                filteringAttributes: profileAttributes,
-                postImageAttributes: profileAttributes,
-                runInUserContext: RunInUserContext.CallingUser,
-                stepDescription: "Summarizes committed account profile updates.");
+                new RegisteredEvent(
+                    PluginStage.PostOperation,
+                    SdkMessageProcessingStepMode.Synchronous,
+                    Messages.Update,
+                    Account.EntityLogicalName,
+                    AccountPostOpUpdateSync,
+                    requiredPostImageName: PluginImageNames.PostImage,
+                    filteringAttributes: profileAttributes,
+                    postImageAttributes: profileAttributes,
+                    runInUserContext: RunInUserContext.CallingUser,
+                    stepDescription: "Summarizes committed account profile updates.")
+            };
         }
 
         private void AccountPreOpUpdateSync(LocalPluginContext context)

@@ -6,12 +6,12 @@ param(
 
     [string] $PluginProject = "Ops.Plugins/Ops.Plugins.csproj",
 
-    [string] $PluginFile = "Ops.Plugins/bin/Release/net462/Ops.Plugins.dll",
+    [string] $PluginFile = "Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll",
 
     [string] $AssemblyName,
 
     [ValidateSet("Debug", "Release")]
-    [string] $Configuration = "Release",
+    [string] $Configuration = "Debug",
 
     [switch] $NoBuild,
 
@@ -50,9 +50,20 @@ function Invoke-ExternalCommand {
     param([string[]] $Command)
 
     Write-CommandPreview -Command $Command
-    & $Command[0] @($Command | Select-Object -Skip 1)
-    if ($LASTEXITCODE -ne 0) {
-        exit $LASTEXITCODE
+
+    $output = @(& $Command[0] @($Command | Select-Object -Skip 1) 2>&1)
+    $exitCode = $LASTEXITCODE
+
+    foreach ($line in $output) {
+        Write-Host $line
+    }
+
+    if ($exitCode -ne 0) {
+        exit $exitCode
+    }
+
+    if ($output | Where-Object { $_.ToString() -match '^\s*Error:' -or $_.ToString() -match '^\s*\[ERROR\]' }) {
+        throw "Command failed: $($Command -join ' ')"
     }
 }
 
@@ -207,7 +218,7 @@ if ($Help) {
     Write-Host "  .\Scripts\Deploy-PluginAssembly.ps1 -Environment https://org.crm.dynamics.com -PreviewTarget"
     Write-Host ""
     Write-Host "Defaults:"
-    Write-Host "  - Builds Ops.Plugins in Release unless -NoBuild is passed."
+    Write-Host "  - Builds Ops.Plugins in Debug unless -NoBuild is passed."
     Write-Host "  - Selects the PAC auth environment when -Environment is passed."
     Write-Host "  - If -PluginAssemblyId is omitted, resolves the target by built DLL assembly name."
     Write-Host "  - -PreviewTarget reports the DLL path, assembly name, and resolved/entered target without building or uploading."

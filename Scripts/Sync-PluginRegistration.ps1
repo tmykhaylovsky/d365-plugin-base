@@ -5,7 +5,7 @@ param(
     [switch] $PushAssembly,
     [string] $AssemblyName,
     [Guid] $PluginAssemblyId,
-    [string] $Assembly = "Ops.Plugins/bin/Release/net462/Ops.Plugins.dll",
+    [string] $Assembly = "Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll",
     [string] $UserMap,
     [switch] $NoBuild,
     [switch] $VerboseOutput,
@@ -43,7 +43,7 @@ function Write-ApplyCommand {
         $command += (Format-PowerShellArgument $AssemblyName)
     }
 
-    if ($Assembly -ne "Ops.Plugins/bin/Release/net462/Ops.Plugins.dll") {
+    if ($Assembly -ne "Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll") {
         $command += "-Assembly"
         $command += (Format-PowerShellArgument $Assembly)
     }
@@ -114,7 +114,7 @@ if ($Help) {
     Write-Host "  .\Scripts\Sync-PluginRegistration.ps1 -Environment https://org.crm.dynamics.com -PushAssembly"
     Write-Host ""
     Write-Host "Defaults:"
-    Write-Host "  - Builds Ops.Plugins in Release unless -NoBuild is passed."
+    Write-Host "  - Builds Ops.Plugins in Debug unless -NoBuild is passed."
     Write-Host "  - Dry-runs unless -Apply is passed."
     Write-Host "  - Uploads the built DLL before comparing/applying when -Apply is passed."
     Write-Host "  - -PushAssembly can be used with a dry-run to upload first, then inspect the resulting plan."
@@ -147,7 +147,7 @@ try {
     }
 
     if (-not $NoBuild) {
-        dotnet build "Ops.Plugins/Ops.Plugins.csproj" -c Release
+        dotnet build "Ops.Plugins/Ops.Plugins.csproj" -c Debug
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
         dotnet build "Ops.Plugins.Registration/Ops.Plugins.Registration.csproj" -c Release

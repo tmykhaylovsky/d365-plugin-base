@@ -38,13 +38,13 @@ in [`Ops.Plugins.Registration/README.md`](Ops.Plugins.Registration/README.md#run
 ## Build Deployable Assembly
 
 ```powershell
-dotnet build Ops.Plugins/Ops.Plugins.csproj -c Release
+dotnet build Ops.Plugins/Ops.Plugins.csproj -c Debug
 ```
 
 Output:
 
 ```text
-Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
+Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll
 ```
 
 ## Push Existing Plugin Assembly
@@ -52,7 +52,7 @@ Ops.Plugins/bin/Release/net462/Ops.Plugins.dll
 ```powershell
 pac plugin push `
   --pluginId <pluginassembly-guid> `
-  --pluginFile Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
+  --pluginFile Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll `
   --type Assembly
 ```
 
@@ -90,7 +90,7 @@ The lower-level console command is also available:
 
 ```powershell
 dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `
-  --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
+  --assembly Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll `
   --pluginAssemblyId <pluginassembly-guid> `
   --connectionString DATAVERSE_CONNECTION
 ```
@@ -101,7 +101,7 @@ For interactive OAuth, pass the environment URL:
 
 ```powershell
 dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `
-  --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
+  --assembly Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll `
   --environment https://<your-org>.crm.dynamics.com
 ```
 
@@ -111,7 +111,7 @@ Use an explicit apply flag for changes:
 
 ```powershell
 dotnet run --project Ops.Plugins.Registration/Ops.Plugins.Registration.csproj -- `
-  --assembly Ops.Plugins/bin/Release/net462/Ops.Plugins.dll `
+  --assembly Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll `
   --pluginAssemblyId <pluginassembly-guid> `
   --connectionString DATAVERSE_CONNECTION `
   --apply

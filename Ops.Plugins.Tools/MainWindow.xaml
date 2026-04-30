@@ -1,0 +1,132 @@
+﻿<Window x:Class="Ops.Plugins.Tools.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Plugin Tools" Height="780" Width="1180" MinHeight="640" MinWidth="980"
+        Background="#EEE8DC">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="190" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,14">
+            <DockPanel>
+                <Button x:Name="ReloadButton" DockPanel.Dock="Right" Content="Reload" Click="ReloadButton_Click" MinWidth="58" Padding="8,4" Margin="8,0,0,0" />
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                    <TextBlock Text="Folder" FontWeight="SemiBold" Margin="0,4,6,0" />
+                    <ComboBox x:Name="RepositoryCombo" Width="260" DisplayMemberPath="Name" SelectionChanged="RepositoryCombo_SelectionChanged" Margin="0,0,12,0" ToolTip="Plugin repositories discovered under your repos folder." />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock x:Name="PrerequisiteStatusText" Foreground="{StaticResource MutedBrush}" />
+                </StackPanel>
+            </DockPanel>
+
+            <Expander Header="PAC Setup / Authentication" IsExpanded="False" Margin="0,12,0,0">
+                <Border Background="#FFFDF7" BorderBrush="#D3C9B8" BorderThickness="1" CornerRadius="8" Padding="12" Margin="0,8,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="3*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid Grid.Column="0" Margin="0,0,18,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Saved" FontWeight="SemiBold" Margin="0,0,8,8" VerticalAlignment="Center" />
+                            <ComboBox Grid.Row="0" Grid.Column="1" x:Name="EnvironmentCombo" DisplayMemberPath="Name" SelectionChanged="EnvironmentCombo_SelectionChanged" Margin="0,0,0,8" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Name" FontWeight="SemiBold" Margin="0,0,8,8" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="EnvironmentNameText" Margin="0,0,0,8" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="URL" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="2" Grid.Column="1" x:Name="EnvironmentUrlText" />
+                        </Grid>
+
+                        <DockPanel Grid.Column="1">
+                            <TextBlock DockPanel.Dock="Top" x:Name="ActiveAuthText" Text="Active profile: refresh profiles to inspect PAC state." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                            <WrapPanel DockPanel.Dock="Top">
+                                <Button Content="Create Auth Profile" Click="CreateAuth_Click" ToolTip="Start device-code sign-in for the environment URL." />
+                                <Button Content="Refresh Profiles" Click="RefreshProfiles_Click" ToolTip="Reload PAC auth profiles and select the active one." />
+                                <Button Content="Save Environment" Click="SaveEnvironment_Click" ToolTip="Save this environment name and URL locally." />
+                                <Button Content="Check PAC CLI" Click="CheckPac_Click" ToolTip="Confirm that the Power Platform CLI can be launched." />
+                            </WrapPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Auth Profile" FontWeight="SemiBold" Margin="0,4,8,0" VerticalAlignment="Top" />
+                                <StackPanel Grid.Column="1">
+                                    <ComboBox x:Name="AuthProfileCombo" DisplayMemberPath="DisplayName" SelectionChanged="AuthProfileCombo_SelectionChanged" ToolTip="Selecting a profile makes it the active PAC auth profile." />
+                                    <TextBlock x:Name="AuthProfileDetailText" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+                        </DockPanel>
+                    </Grid>
+                </Border>
+            </Expander>
+        </StackPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170" />
+                <ColumnDefinition Width="270" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="#243238" CornerRadius="10" Padding="10" Margin="0,0,12,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Categories" Foreground="#DDE7DE" FontWeight="SemiBold" Margin="6,4,0,10" />
+                    <ListBox x:Name="CategoryList" SelectionChanged="CategoryList_SelectionChanged" Background="Transparent" BorderThickness="0" Foreground="#F9F6EF" />
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="1" Background="{StaticResource PanelBrush}" CornerRadius="10" Padding="12" Margin="0,0,12,0">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Available Actions" FontWeight="SemiBold" Margin="0,0,0,10" />
+                    <ListBox x:Name="ActionList" SelectionChanged="ActionList_SelectionChanged" DisplayMemberPath="DisplayTitle" />
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Column="2" Background="#FFFDF7" CornerRadius="10" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock x:Name="ActionTitle" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource InkBrush}" />
+                        <TextBlock x:Name="ActionDescription" TextWrapping="Wrap" Margin="0,6,0,12" Foreground="{StaticResource MutedBrush}" />
+
+                        <TextBlock Text="Parameters" FontWeight="SemiBold" />
+                        <StackPanel x:Name="ParameterPanel" Margin="0,6,0,8" />
+                        <CheckBox x:Name="ConfirmWritesCheck" Content="I reviewed the command preview and confirm write/apply/destructive behavior." Margin="0,2,0,12" Visibility="Collapsed" Checked="AnyParameter_Changed" Unchecked="AnyParameter_Changed" />
+
+                        <GroupBox Header="Deployment Preview" x:Name="DeploymentPreviewBox" Visibility="Collapsed" Margin="0,0,0,12">
+                            <TextBlock x:Name="DeploymentPreviewText" Margin="10" TextWrapping="Wrap" />
+                        </GroupBox>
+
+                        <TextBlock Text="Command Preview" FontWeight="SemiBold" />
+                        <TextBox x:Name="CommandPreviewText" IsReadOnly="True" FontFamily="Consolas" TextWrapping="Wrap" MinHeight="58" />
+                        <WrapPanel Margin="0,6,0,0">
+                            <Button x:Name="RunButton" Content="Run" Click="RunButton_Click" />
+                            <Button x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" IsEnabled="False" />
+                        </WrapPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#151B1E" CornerRadius="10" Padding="10" Margin="0,14,0,0">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Output" Foreground="#EAE3D2" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <TextBox x:Name="OutputText" IsReadOnly="True" FontFamily="Consolas" Background="#151B1E" Foreground="#EAE3D2" BorderThickness="0" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "scripts": [
+    {
+      "id": "rename-solution-prefix",
+      "actionKind": "script",
+      "title": "Rename Solution Prefix",
+      "category": "Setup",
+      "displayOrder": 10,
+      "script": "Scripts/Rename-SolutionPrefix.ps1",
+      "description": "Preview or apply Ops namespace, project, file, and folder prefix renames after copying the starter.",
+      "dangerLevel": "localWrites",
+      "defaultMode": "preview",
+      "requiresConfirmationWhen": ["Apply"],
+      "parameters": [
+        { "name": "NewPrefix", "type": "text", "required": true, "description": "New namespace/project prefix such as Contoso. Do not include a trailing dot.", "validationPattern": "^[A-Za-z_][A-Za-z0-9_]*$" },
+        { "name": "OldPrefix", "type": "text", "required": false, "defaultValue": "Ops", "description": "Existing prefix to replace." },
+        { "name": "Apply", "type": "switch", "required": false, "defaultValue": false, "description": "Write the previewed renames to disk.", "confirmationRequired": true },
+        { "name": "ReplaceStandalonePrefix", "type": "switch", "required": false, "defaultValue": false, "description": "Also replace standalone Ops identifiers, not only Ops. namespace/project matches." },
+        { "name": "ExcludePath", "type": "stringArray", "required": false, "advanced": true, "description": "Additional path exclusions for rename scanning." },
+        { "name": "TextExtension", "type": "stringArray", "required": false, "advanced": true, "description": "File extensions considered safe for text replacement." }
+      ]
+    },
+    {
+      "id": "strip-starter-content",
+      "actionKind": "script",
+      "title": "Strip Starter Content",
+      "category": "Setup",
+      "displayOrder": 20,
+      "script": "Scripts/Strip-StarterContent.ps1",
+      "description": "Preview or apply removal of advanced starter content after copying and renaming a project. The launcher, script catalog, and Scripts README are kept by default.",
+      "dangerLevel": "destructive",
+      "defaultMode": "preview",
+      "requiresConfirmationWhen": ["Apply", "ExtraRemovePath"],
+      "parameters": [
+        { "name": "Apply", "type": "switch", "required": false, "defaultValue": false, "description": "Remove files and update the solution. Without this switch the script only previews.", "confirmationRequired": true },
+        { "name": "KeepMarkdown", "type": "switch", "required": false, "defaultValue": false, "description": "Keep root and project markdown files. Scripts/README.md is always kept by default." },
+        { "name": "KeepRegistration", "type": "switch", "required": false, "defaultValue": false, "description": "Keep the Ops.Plugins.Registration project and solution reference." },
+        { "name": "KeepRegistrationTests", "type": "switch", "required": false, "defaultValue": false, "description": "Keep registration-focused tests when registration is otherwise stripped." },
+        { "name": "KeepRegistrationSyncScript", "type": "switch", "required": false, "defaultValue": false, "description": "Keep Scripts/Sync-PluginRegistration.ps1 when registration is otherwise stripped." },
+        { "name": "KeepRenameScript", "type": "switch", "required": false, "defaultValue": false, "description": "Keep Scripts/Rename-SolutionPrefix.ps1 after setup is complete." },
+        { "name": "RemoveSigningScript", "type": "switch", "required": false, "defaultValue": false, "description": "Also remove Scripts/New-PluginSigningKey.ps1." },
+        { "name": "RemoveDeployScript", "type": "switch", "required": false, "defaultValue": false, "description": "Also remove Scripts/Deploy-PluginAssembly.ps1." },
+        { "name": "KeepLocalTooling", "type": "switch", "required": false, "defaultValue": false, "description": "Keep repo-local assistant/tooling folders such as .claude, .codex, .local, and .mcp.json." },
+        { "name": "ExtraRemovePath", "type": "stringArray", "required": false, "advanced": true, "description": "Additional repository-relative paths to remove. Paths outside the repository are rejected.", "confirmationRequired": true }
+      ]
+    },
+    {
+      "id": "new-plugin-signing-key",
+      "actionKind": "script",
+      "title": "Create Plugin Signing Key",
+      "category": "Setup",
+      "displayOrder": 30,
+      "script": "Scripts/New-PluginSigningKey.ps1",
+      "description": "Create or verify the strong-name key used by the plugin project and ensure signing properties are present.",
+      "dangerLevel": "localWrites",
+      "parameters": [
+        { "name": "ProjectPath", "type": "filePath", "required": true, "defaultValue": "Ops.Plugins/Ops.Plugins.csproj", "description": "Plugin project file to update with signing settings." },
+        { "name": "Path", "type": "directoryPath", "required": false, "description": "Directory where the key should be created. Defaults to the project directory." },
+        { "name": "KeyFileName", "type": "text", "required": false, "defaultValue": "PluginKey.snk", "description": "Strong-name key file name." },
+        { "name": "Force", "type": "switch", "required": false, "defaultValue": false, "description": "Regenerate the key even when one already exists.", "confirmationRequired": true }
+      ]
+    },
+    {
+      "id": "update-early-bound-model",
+      "actionKind": "script",
+      "title": "Update Early-Bound Model",
+      "category": "Model",
+      "displayOrder": 10,
+      "script": "Scripts/Update-EarlyBoundModel.ps1",
+      "description": "Run pac modelbuilder build and refresh Ops.Plugins.Model.projitems for generated Dataverse model files.",
+      "dangerLevel": "localWrites",
+      "parameters": [
+        { "name": "Environment", "type": "environment", "required": true, "description": "Dataverse environment URL selected from the local environment cache." },
+        { "name": "SettingsTemplateFile", "type": "filePath", "required": false, "defaultValue": "Ops.Plugins.Model/builderSettings.json", "description": "PAC modelbuilder settings template." },
+        { "name": "OutDirectory", "type": "directoryPath", "required": false, "defaultValue": "Ops.Plugins.Model", "description": "Generated model output directory." },
+        { "name": "LogLevel", "type": "choice", "required": false, "choices": ["Off", "Critical", "Error", "Warning", "Information", "Verbose", "ActivityTracing", "All"], "description": "Optional PAC modelbuilder log level." },
+        { "name": "NoProjItemsUpdate", "type": "switch", "required": false, "defaultValue": false, "description": "Skip updating Ops.Plugins.Model.projitems after generation." }
+      ]
+    },
+    {
+      "id": "deploy-plugin-assembly",
+      "actionKind": "script",
+      "title": "Deploy Plugin Assembly",
+      "category": "Deployment",
+      "displayOrder": 10,
+      "script": "Scripts/Deploy-PluginAssembly.ps1",
+      "description": "Build and upload the plugin DLL to an existing Dataverse pluginassembly row with pac plugin push.",
+      "dangerLevel": "writes",
+      "requiresConfirmationWhen": ["run"],
+      "parameters": [
+        { "name": "Environment", "type": "environment", "required": true, "description": "Dataverse environment URL selected from the local environment cache." },
+        { "name": "PluginAssemblyId", "type": "guid", "required": false, "description": "Existing Dataverse pluginassembly row. If omitted, the script resolves by assembly name." },
+        { "name": "AssemblyName", "type": "text", "required": false, "description": "Assembly name used when resolving the Dataverse pluginassembly row." },
+        { "name": "Configuration", "type": "choice", "required": false, "defaultValue": "Debug", "choices": ["Debug", "Release"], "description": "Build configuration." },
+        { "name": "NoBuild", "type": "switch", "required": false, "defaultValue": false, "description": "Skip dotnet build and deploy the existing DLL." },
+        { "name": "PreviewTarget", "type": "switch", "required": false, "defaultValue": false, "description": "Preview DLL path, assembly name, and target pluginassembly resolution without building or uploading." },
+        { "name": "PluginProject", "type": "filePath", "required": false, "defaultValue": "Ops.Plugins/Ops.Plugins.csproj", "advanced": true, "description": "Project to build before deployment." },
+        { "name": "PluginFile", "type": "filePath", "required": false, "defaultValue": "Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll", "advanced": true, "description": "Built plugin DLL to upload." }
+      ]
+    },
+    {
+      "id": "sync-plugin-registration",
+      "actionKind": "script",
+      "title": "Sync Plugin Registration",
+      "category": "Registration",
+      "displayOrder": 10,
+      "script": "Scripts/Sync-PluginRegistration.ps1",
+      "description": "Dry-run or apply Dataverse plugin step and image registration from code metadata.",
+      "dangerLevel": "writes",
+      "defaultMode": "dryRun",
+      "requiresConfirmationWhen": ["Apply", "PushAssembly"],
+      "parameters": [
+        { "name": "Environment", "type": "environment", "required": true, "description": "Dataverse environment URL selected from the local environment cache. Raw connection strings are intentionally not exposed by the launcher." },
+        { "name": "Apply", "type": "switch", "required": false, "defaultValue": false, "description": "Apply step/image changes. Without this switch the script dry-runs.", "confirmationRequired": true },
+        { "name": "PushAssembly", "type": "switch", "required": false, "defaultValue": false, "description": "Upload the built assembly before the dry-run or apply comparison.", "confirmationRequired": true },
+        { "name": "PluginAssemblyId", "type": "guid", "required": false, "description": "Existing Dataverse pluginassembly row. If omitted, the sync resolves by assembly name." },
+        { "name": "AssemblyName", "type": "text", "required": false, "description": "Assembly name used when resolving the Dataverse pluginassembly row." },
+        { "name": "Assembly", "type": "filePath", "required": false, "defaultValue": "Ops.Plugins/bin/Debug/net462/Ops.Plugins.dll", "description": "Built plugin DLL path." },
+        { "name": "UserMap", "type": "filePath", "required": false, "defaultValue": ".local/run-in-user-context.json", "description": "Run-in-user context mapping file." },
+        { "name": "NoBuild", "type": "switch", "required": false, "defaultValue": false, "description": "Skip building Ops.Plugins before sync." },
+        { "name": "VerboseOutput", "type": "switch", "required": false, "defaultValue": false, "description": "Show verbose registration sync output." }
+      ]
+    },
+    {
+      "id": "set-run-in-user-context",
+      "actionKind": "script",
+      "title": "Set Run-In User Context",
+      "category": "Registration",
+      "displayOrder": 20,
+      "script": "Scripts/Set-RunInUserContext.ps1",
+      "description": "Create or update the local run-in-user mapping consumed by registration sync.",
+      "dangerLevel": "localWrites",
+      "parameters": [
+        { "name": "Label", "type": "choice", "required": false, "choices": ["System Admin", "System Admin 2", "Calling User"], "description": "Alias row to update." },
+        { "name": "SystemUserId", "type": "guid", "required": false, "description": "System user id for the selected alias." },
+        { "name": "FullName", "type": "text", "required": false, "description": "Display name for the selected alias." },
+        { "name": "SystemAdminId", "type": "guid", "required": false, "description": "Shortcut for the System Admin alias id." },
+        { "name": "SystemAdminFullName", "type": "text", "required": false, "description": "Shortcut for the System Admin alias display name." },
+        { "name": "SystemAdmin2Id", "type": "guid", "required": false, "description": "Shortcut for the System Admin 2 alias id." },
+        { "name": "SystemAdmin2FullName", "type": "text", "required": false, "description": "Shortcut for the System Admin 2 alias display name." },
+        { "name": "CallingUserFullName", "type": "text", "required": false, "defaultValue": "Calling User", "description": "Display name for the calling user fallback row." },
+        { "name": "Path", "type": "filePath", "required": false, "defaultValue": ".local/run-in-user-context.json", "description": "Local JSON file to write." }
+      ]
+    }
+  ]
+}

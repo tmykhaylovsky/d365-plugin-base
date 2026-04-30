@@ -43,6 +43,7 @@ if ($Help) {
     Write-Host "Default removals:"
     Write-Host "  - Repo-local assistant/tooling folders: .claude, .codex, .local, and .mcp.json."
     Write-Host "  - Root and project markdown files, except Scripts/README.md."
+    Write-Host "  - Scripts/script-catalog.json and the GUI launcher project are kept by default."
     Write-Host "  - Ops.Plugins.Registration and its solution reference."
     Write-Host "  - Registration tests."
     Write-Host "  - Sync-PluginRegistration.ps1."
