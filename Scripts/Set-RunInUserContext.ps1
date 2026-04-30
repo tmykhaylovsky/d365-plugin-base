@@ -55,6 +55,14 @@ function New-RunInUserRow {
     }
 }
 
+function New-DefaultRunInUserRows {
+    return @(
+        (New-RunInUserRow -RowLabel "Calling User" -RowSystemUserId $null -RowFullName "Calling User"),
+        (New-RunInUserRow -RowLabel "System Admin" -RowSystemUserId $null -RowFullName ""),
+        (New-RunInUserRow -RowLabel "System Admin 2" -RowSystemUserId $null -RowFullName "")
+    )
+}
+
 function Get-SortOrder {
     param([string] $RowLabel)
 
@@ -109,7 +117,12 @@ if (Test-Path $targetPath) {
 }
 else {
     $templatePath = Join-Path $repoRoot "Ops.Plugins.Registration\run-in-user-context.template.json"
-    $rows = @(Read-RunInUserRows $templatePath)
+    if (Test-Path -LiteralPath $templatePath) {
+        $rows = @(Read-RunInUserRows $templatePath)
+    }
+    else {
+        $rows = @(New-DefaultRunInUserRows)
+    }
 }
 
 $updatesRequested = $false
