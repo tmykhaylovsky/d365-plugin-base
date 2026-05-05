@@ -32,7 +32,7 @@ namespace Ops.Plugins.Shared
             var context = new LocalPluginContext(serviceProvider, GetType().Name, _unsecureConfig, _secureConfig);
 
             context.Logger.Trace(TraceLevel.Verbose, () =>
-                $"Enter | Correlation: {context.ExecutionContext.CorrelationId:N} | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Depth: {context.ExecutionContext.Depth}");
+                $"Enter | Correlation: {context.CorrelationId:N} | Message: {context.MessageName} | Table: {context.PrimaryEntityName} | Stage: {context.Stage} | Depth: {context.Depth}");
 
             try
             {
@@ -41,7 +41,7 @@ namespace Ops.Plugins.Shared
                 if (registeredEvent == null && registeredEvents.Count > 0)
                 {
                     context.Trace(
-                        $"No registered event found | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        $"No registered event found | Message: {context.MessageName} | Table: {context.PrimaryEntityName} | Stage: {context.Stage} | Mode: {context.Mode}",
                         TraceLevel.Info);
                     return;
                 }
@@ -49,7 +49,7 @@ namespace Ops.Plugins.Shared
                 if (registeredEvent != null && !registeredEvent.HasRequiredImages(context.ExecutionContext))
                 {
                     context.Trace(
-                        $"Registered event missing required pre-image '{registeredEvent.RequiredPreImageName}' | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        $"Registered event missing required pre-image '{registeredEvent.RequiredPreImageName}' | Message: {context.MessageName} | Table: {context.PrimaryEntityName} | Stage: {context.Stage} | Mode: {context.Mode}",
                         TraceLevel.Info);
                     return;
                 }
@@ -57,7 +57,7 @@ namespace Ops.Plugins.Shared
                 if (registeredEvent != null && !registeredEvent.HasRequiredPostImage(context.ExecutionContext))
                 {
                     context.Trace(
-                        $"Registered event missing required post-image '{registeredEvent.RequiredPostImageName}' | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        $"Registered event missing required post-image '{registeredEvent.RequiredPostImageName}' | Message: {context.MessageName} | Table: {context.PrimaryEntityName} | Stage: {context.Stage} | Mode: {context.Mode}",
                         TraceLevel.Info);
                     return;
                 }
@@ -100,8 +100,8 @@ namespace Ops.Plugins.Shared
             if (context == null || registeredEvent == null) return;
 
             TraceFilteringColumnDiagnostics(context, registeredEvent);
-            TraceImageColumnDiagnostics(context, PluginImageNames.PreImage, registeredEvent.RequiredPreImageName, registeredEvent.PreImageColumns, context.ExecutionContext.PreEntityImages);
-            TraceImageColumnDiagnostics(context, PluginImageNames.PostImage, registeredEvent.RequiredPostImageName, registeredEvent.PostImageColumns, context.ExecutionContext.PostEntityImages);
+            TraceImageColumnDiagnostics(context, PluginImageNames.PreImage, registeredEvent.RequiredPreImageName, registeredEvent.PreImageColumns, context.PreEntityImages);
+            TraceImageColumnDiagnostics(context, PluginImageNames.PostImage, registeredEvent.RequiredPostImageName, registeredEvent.PostImageColumns, context.PostEntityImages);
         }
 
         private static void TraceFilteringColumnDiagnostics(LocalPluginContext context, RegisteredEvent registeredEvent)
@@ -162,6 +162,15 @@ namespace Ops.Plugins.Shared
 
             public string MessageName => ExecutionContext.MessageName;
             public string PrimaryEntityName => ExecutionContext.PrimaryEntityName;
+            public Guid PrimaryEntityId => ExecutionContext.PrimaryEntityId;
+            public int Stage => ExecutionContext.Stage;
+            public int Mode => ExecutionContext.Mode;
+            public int Depth => ExecutionContext.Depth;
+            public Guid CorrelationId => ExecutionContext.CorrelationId;
+            public ParameterCollection InputParameters => ExecutionContext.InputParameters;
+            public ParameterCollection OutputParameters => ExecutionContext.OutputParameters;
+            public EntityImageCollection PreEntityImages => ExecutionContext.PreEntityImages;
+            public EntityImageCollection PostEntityImages => ExecutionContext.PostEntityImages;
 
             private readonly string _pluginName;
 

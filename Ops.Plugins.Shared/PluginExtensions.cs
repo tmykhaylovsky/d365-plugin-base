@@ -300,11 +300,25 @@ namespace Ops.Plugins.Shared
         public static void TracePreImages(this PluginBase.LocalPluginContext context) =>
             context.Trace(() =>
             {
-                var images = context.ExecutionContext.PreEntityImages;
+                var images = context.PreEntityImages;
                 return images.Count == 0
                     ? "[no pre-images]"
                     : string.Join(" | ", images.Select(kvp => $"PreImage[{kvp.Key}]: {kvp.Value.ToTraceString()}"));
             }, TraceLevel.Verbose);
+
+        // Logs all InputParameters at Verbose level — call at the top of ExecutePlugin or custom API handler.
+        // Entity values are fully expanded; EntityCollection shows count only.
+        public static void TraceInputParameters(this PluginBase.LocalPluginContext context) =>
+            context.Trace(
+                () => $"{nameof(IExecutionContext.InputParameters)}: " + CrmFormat.Of(context.InputParameters),
+                TraceLevel.Verbose);
+
+        // Logs all OutputParameters at Verbose level — call at the end of ExecutePlugin or after SetOutputParameter.
+        // Entity values are fully expanded; EntityCollection shows count only.
+        public static void TraceOutputParameters(this PluginBase.LocalPluginContext context) =>
+            context.Trace(
+                () => $"{nameof(IExecutionContext.OutputParameters)}: " + CrmFormat.Of(context.OutputParameters),
+                TraceLevel.Verbose);
 
         // Logs the before/after value for a column using pre/post images.
         public static void TraceColumnChange(
@@ -363,7 +377,7 @@ namespace Ops.Plugins.Shared
     public static class PluginMessages
     {
         public static string MissingInputParameter(string name) =>
-            $"Plugin config error: {name} parameter not found in InputParameters.";
+            $"Plugin config error: {name} parameter not found in {nameof(IExecutionContext.InputParameters)}.";
 
         public static string MissingTableColumn(string tableName, string columnName) =>
             $"Plugin config error: {columnName} not found in {tableName} table.";
