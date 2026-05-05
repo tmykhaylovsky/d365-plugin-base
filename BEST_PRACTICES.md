@@ -10,7 +10,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Multiple `RegisteredEvent` entries in one plugin are fine when they represent related behavior at distinct message/entity/stage/mode combinations. Do not duplicate the same event shape just to call multiple handlers.
 - Document fixed Run in User's Context labels near the registration workflow, not as raw GUIDs in plugin code.
 - Point each registered event at a concise step-oriented handler name, such as `AccountPostOpUpdateSync`.
-- Use `Messages.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` instead of raw strings for standard Dataverse values.
+- Use `Messages.*`, `ParameterNames.*`, `SdkMessageProcessingStepMode`, and `PluginImageNames.*` from `Ops.Plugins.Shared` instead of raw strings for standard Dataverse values. `Messages` holds SDK verb names (Win, Lose, CloseIncident, CancelSalesOrder, CloseQuote). `ParameterNames` holds `InputParameters` / `OutputParameters` key names, including close-activity parameter keys such as `OpportunityClose`, `IncidentResolution`, `OrderClose`, and `QuoteClose`.
 - Use generated early-bound model types from `Ops.Plugins.Model` whenever available. Prefer `Account.EntityLogicalName`, generated option-set enums, and field-class aliases such as `using AccountFields = Ops.Plugins.Model.Account.Fields;` over raw logical names or integer option values.
 - In infrastructure projects that touch generated tables, use generated entity classes for create/update records and generated `Fields.*` constants for `QueryExpression`/`ColumnSet` plumbing.
 - Convert Dataverse `Target` and images to early-bound types with `ToEntity<T>()`; do not replace input parameters with early-bound entity instances.
@@ -62,7 +62,9 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 | `context.GetTarget()` | Returns the `Target` input parameter as `Entity`, or null |
 | `context.GetPreImage<T>()` / `GetPostImage<T>()` | Returns typed pre/post image, or null |
 | `context.GetInputParameter<T>(name)` | Returns input parameter or `default` if absent |
-| `context.GetRequiredInputParameter<T>(name)` | Returns input parameter; throws `InvalidPluginExecutionException` if absent |
+| `context.GetRequiredInputParameter<T>(name)` | Returns input parameter; throws `InvalidPluginExecutionException` if absent. Only use when the SDK guarantees the parameter's presence. |
+| `ResolveEntityReference(context, paramName, field, logicalName)` | Resolves a parent `EntityReference` from a close/cancel operation: preferred path reads the lookup from `InputParameters[paramName]`; fallback wraps `PrimaryEntityId`; throws only when both fail. |
+| `ResolveOpportunityFromWin(context)` | Thin wrapper for Win operations — resolves the `opportunity` reference via `ParameterNames.OpportunityClose` / `"opportunityid"`. |
 | `context.Trace(msg, level)` | Routes to `PluginLogger`; omit level to use `GlobalLevel` |
 | `context.TraceTarget()` | Verbose dump of the target entity columns |
 | `context.TraceColumnChange(pre, post, col, changed)` | Traces before/after column value |
@@ -75,6 +77,15 @@ PluginMessages.MissingTableColumn(tableName, columnName)  // column not found in
 ```
 
 `RegisteredEvent` constructor uses `filteringColumns`, `preImageColumns`, and `postImageColumns` (not `…Attributes`). The same naming applies to the read properties.
+
+## InputParameter resolution for close and cancel operations
+
+For messages that pass an operation entity in `InputParameters` (Win, Lose, CloseIncident, CancelSalesOrder, CloseQuote), the operation entity may be absent when the plugin fires in a child pipeline stage. Apply these rules:
+
+- Treat non-`Target` `InputParameters` as optional. Provide a `PrimaryEntityId` fallback.
+- Only use `GetRequiredInputParameter<T>` when the SDK guarantees the parameter will always be present (e.g., Custom API required inputs).
+- Use `ResolveEntityReference` in `PluginBase` to implement the preferred-path + fallback + throw pattern without repeating it per plugin.
+- Add thin named wrappers (`ResolveOpportunityFromWin`, etc.) for frequently used combinations so call sites state intent rather than raw strings.
 
 ## Logging and diagnostics
 

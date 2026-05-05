@@ -18,10 +18,13 @@ namespace Ops.Plugins.Shared
         public const string BackgroundSend = "BackgroundSend";
         public const string Book = "Book";
         public const string Cancel = "Cancel";
+        public const string CancelSalesOrder = "CancelSalesOrder";
         public const string CheckIncoming = "CheckIncoming";
         public const string CheckPromote = "CheckPromote";
         public const string Clone = "Clone";
         public const string Close = "Close";
+        public const string CloseIncident = "CloseIncident";
+        public const string CloseQuote = "CloseQuote";
         public const string CopyDynamicListToStatic = "CopyDynamicListToStatic";
         public const string CopySystemForm = "CopySystemForm";
         public const string Create = "Create";

@@ -95,6 +95,44 @@ namespace Ops.Plugins.Shared
             return Enumerable.Empty<RegisteredEvent>();
         }
 
+        // Resolves a parent EntityReference from a close/cancel operation.
+        // Preferred path: reads parentIdAttribute from the operation entity in InputParameters[inputParameterName].
+        // Fallback: wraps PrimaryEntityId — handles child pipeline stages where the operation entity is absent.
+        // Only throws when neither path yields a non-empty Id.
+        protected EntityReference ResolveEntityReference(
+            LocalPluginContext context,
+            string inputParameterName,
+            string parentIdAttribute,
+            string parentLogicalName,
+            bool trace = true)
+        {
+            var execContext = context.ExecutionContext;
+
+            if (execContext.InputParameters.TryGetValue(inputParameterName, out var param) && param is Entity operationEntity)
+            {
+                var parentRef = operationEntity.GetAttributeValue<EntityReference>(parentIdAttribute);
+                if (!parentRef.IsNullOrEmpty())
+                {
+                    if (trace)
+                        context.Trace($"Resolved {parentLogicalName} reference from {inputParameterName}.{parentIdAttribute}: {parentRef.Id}", TraceLevel.Verbose);
+                    return parentRef;
+                }
+            }
+
+            if (execContext.PrimaryEntityId != Guid.Empty)
+            {
+                if (trace)
+                    context.Trace($"Resolved {parentLogicalName} reference from PrimaryEntityId: {execContext.PrimaryEntityId}", TraceLevel.Verbose);
+                return new EntityReference(parentLogicalName, execContext.PrimaryEntityId);
+            }
+
+            throw new InvalidPluginExecutionException(
+                $"Unable to resolve {parentLogicalName} reference for message {execContext.MessageName}.");
+        }
+
+        protected EntityReference ResolveOpportunityFromWin(LocalPluginContext context) =>
+            ResolveEntityReference(context, ParameterNames.OpportunityClose, "opportunityid", "opportunity");
+
         private static void TraceRegistrationDiagnostics(LocalPluginContext context, RegisteredEvent registeredEvent)
         {
             if (context == null || registeredEvent == null) return;

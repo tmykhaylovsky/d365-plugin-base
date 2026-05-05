@@ -15,11 +15,15 @@ namespace Ops.Plugins.Shared
         public const string FetchXml = "FetchXml";
         public const string Id = "Id";
         public const string id = "id";
+        public const string IncidentResolution = "IncidentResolution";
+        public const string OpportunityClose = "OpportunityClose";
+        public const string OrderClose = "OrderClose";
         public const string Principal = "Principal";
         public const string PrincipalAccess = "PrincipalAccess";
         public const string PrincipalAccesses = "PrincipalAccesses";
         public const string Query = "Query";
         public const string QueryExpression = "QueryExpression";
+        public const string QuoteClose = "QuoteClose";
         public const string RelatedEntities = "RelatedEntities";
         public const string RelatedEntitiesQuery = "RelatedEntitiesQuery";
         public const string Relationship = "Relationship";
