@@ -8,9 +8,13 @@ Shared source for Dataverse plugin infrastructure.
 |------|---------|
 | `PluginBase.cs` | Base `IPlugin` implementation and `LocalPluginContext`. |
 | `PluginLogger.cs` | Tracing and optional Application Insights logger wrapper. |
-| `PluginExtensions.cs` | Dataverse SDK helper extensions. |
+| `PluginExtensions.cs` | Dataverse SDK helper extensions and `PluginMessages` templates. |
 | `CrmFormat.cs` | Readable formatting for trace output. |
 | `FetchXml/` | Lightweight FetchXML builder helpers. |
+
+## Terminology
+
+This project uses Dataverse modern naming: **Table** (not Entity) and **Column** (not Attribute) in all variable names, parameter names, and user-facing messages. SDK type names (`Entity`, `EntityReference`, `EntityLogicalName`, `Attributes`, etc.) are unchanged as they are SDK vocabulary.
 
 ## How it is used
 

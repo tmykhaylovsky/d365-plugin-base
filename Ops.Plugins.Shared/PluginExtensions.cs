@@ -147,12 +147,12 @@ namespace Ops.Plugins.Shared
         // Passing null for columns selects all columns — prefer an explicit ColumnSet in production.
         public static T GetFirstOrDefault<T>(
             this IOrganizationService service,
-            string entityName,
+            string tableName,
             string attributeName,
             object value,
             ColumnSet columns = null) where T : Entity
         {
-            var query = new QueryExpression(entityName)
+            var query = new QueryExpression(tableName)
             {
                 ColumnSet = columns ?? new ColumnSet(true),
                 TopCount  = 1,
@@ -201,13 +201,13 @@ namespace Ops.Plugins.Shared
         // Catches error 0x80040217 (Entity Does Not Exist) — all other exceptions propagate.
         public static T GetRecordOrDefault<T>(
             this IOrganizationService service,
-            string entityName,
+            string tableName,
             Guid id,
             ColumnSet columns) where T : Entity
         {
             try
             {
-                return service.Retrieve(entityName, id, columns).ToEntity<T>();
+                return service.Retrieve(tableName, id, columns).ToEntity<T>();
             }
             catch (Exception ex) when (
                 ex.Message.Contains("0x80040217") ||
@@ -218,15 +218,15 @@ namespace Ops.Plugins.Shared
         }
 
         // Returns true if a record with the given Id exists — uses no-lock, selects no columns
-        public static bool RecordExists(this IOrganizationService service, string entityName, Guid id)
+        public static bool RecordExists(this IOrganizationService service, string tableName, Guid id)
         {
-            var query = new QueryExpression(entityName)
+            var query = new QueryExpression(tableName)
             {
                 ColumnSet = new ColumnSet(false),
                 TopCount  = 1,
                 NoLock    = true
             };
-            query.Criteria.AddCondition(entityName + "id", ConditionOperator.Equal, id);
+            query.Criteria.AddCondition(tableName + "id", ConditionOperator.Equal, id);
             return service.RetrieveMultiple(query).Entities.Count > 0;
         }
 
@@ -243,16 +243,16 @@ namespace Ops.Plugins.Shared
         // Named AssociateRecord to avoid ambiguity with IOrganizationService.Associate.
         public static void AssociateRecord(
             this IOrganizationService service,
-            string entityName,    Guid entityId,
+            string tableName,    Guid entityId,
             string relationshipName,
-            string relatedEntityName, Guid relatedEntityId)
+            string relatedTableName, Guid relatedEntityId)
         {
             service.Associate(
-                entityName, entityId,
+                tableName, entityId,
                 new Relationship(relationshipName),
                 new EntityReferenceCollection
                 {
-                    new EntityReference(relatedEntityName, relatedEntityId)
+                    new EntityReference(relatedTableName, relatedEntityId)
                 });
         }
 
@@ -306,8 +306,8 @@ namespace Ops.Plugins.Shared
                     : string.Join(" | ", images.Select(kvp => $"PreImage[{kvp.Key}]: {kvp.Value.ToTraceString()}"));
             }, TraceLevel.Verbose);
 
-        // Logs the before/after value for an attribute using pre/post images.
-        public static void TraceAttributeChange(
+        // Logs the before/after value for a column using pre/post images.
+        public static void TraceColumnChange(
             this PluginBase.LocalPluginContext context,
             Entity preImage,
             Entity postImage,
@@ -355,5 +355,17 @@ namespace Ops.Plugins.Shared
             query.Criteria.AddCondition(attributeName, op, value);
             return query;
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Standardized plugin message templates
+    // -------------------------------------------------------------------------
+    public static class PluginMessages
+    {
+        public static string MissingInputParameter(string name) =>
+            $"Plugin config error: {name} parameter not found in InputParameters.";
+
+        public static string MissingTableColumn(string tableName, string columnName) =>
+            $"Plugin config error: {columnName} not found in {tableName} table.";
     }
 }

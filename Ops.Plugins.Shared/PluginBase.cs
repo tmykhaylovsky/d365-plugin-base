@@ -32,7 +32,7 @@ namespace Ops.Plugins.Shared
             var context = new LocalPluginContext(serviceProvider, GetType().Name, _unsecureConfig, _secureConfig);
 
             context.Logger.Trace(TraceLevel.Verbose, () =>
-                $"Enter | Correlation: {context.ExecutionContext.CorrelationId:N} | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Depth: {context.ExecutionContext.Depth}");
+                $"Enter | Correlation: {context.ExecutionContext.CorrelationId:N} | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Depth: {context.ExecutionContext.Depth}");
 
             try
             {
@@ -41,7 +41,7 @@ namespace Ops.Plugins.Shared
                 if (registeredEvent == null && registeredEvents.Count > 0)
                 {
                     context.Trace(
-                        $"No registered event found | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        $"No registered event found | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
                         TraceLevel.Info);
                     return;
                 }
@@ -49,7 +49,7 @@ namespace Ops.Plugins.Shared
                 if (registeredEvent != null && !registeredEvent.HasRequiredImages(context.ExecutionContext))
                 {
                     context.Trace(
-                        $"Registered event missing required pre-image '{registeredEvent.RequiredPreImageName}' | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        $"Registered event missing required pre-image '{registeredEvent.RequiredPreImageName}' | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
                         TraceLevel.Info);
                     return;
                 }
@@ -57,7 +57,7 @@ namespace Ops.Plugins.Shared
                 if (registeredEvent != null && !registeredEvent.HasRequiredPostImage(context.ExecutionContext))
                 {
                     context.Trace(
-                        $"Registered event missing required post-image '{registeredEvent.RequiredPostImageName}' | Message: {context.ExecutionContext.MessageName} | Entity: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
+                        $"Registered event missing required post-image '{registeredEvent.RequiredPostImageName}' | Message: {context.ExecutionContext.MessageName} | Table: {context.ExecutionContext.PrimaryEntityName} | Stage: {context.ExecutionContext.Stage} | Mode: {context.ExecutionContext.Mode}",
                         TraceLevel.Info);
                     return;
                 }
@@ -99,48 +99,48 @@ namespace Ops.Plugins.Shared
         {
             if (context == null || registeredEvent == null) return;
 
-            TraceFilteringAttributeDiagnostics(context, registeredEvent);
-            TraceImageAttributeDiagnostics(context, PluginImageNames.PreImage, registeredEvent.RequiredPreImageName, registeredEvent.PreImageAttributes, context.ExecutionContext.PreEntityImages);
-            TraceImageAttributeDiagnostics(context, PluginImageNames.PostImage, registeredEvent.RequiredPostImageName, registeredEvent.PostImageAttributes, context.ExecutionContext.PostEntityImages);
+            TraceFilteringColumnDiagnostics(context, registeredEvent);
+            TraceImageColumnDiagnostics(context, PluginImageNames.PreImage, registeredEvent.RequiredPreImageName, registeredEvent.PreImageColumns, context.ExecutionContext.PreEntityImages);
+            TraceImageColumnDiagnostics(context, PluginImageNames.PostImage, registeredEvent.RequiredPostImageName, registeredEvent.PostImageColumns, context.ExecutionContext.PostEntityImages);
         }
 
-        private static void TraceFilteringAttributeDiagnostics(LocalPluginContext context, RegisteredEvent registeredEvent)
+        private static void TraceFilteringColumnDiagnostics(LocalPluginContext context, RegisteredEvent registeredEvent)
         {
-            if (!context.IsMessage(Messages.Update) || !registeredEvent.FilteringAttributes.Any()) return;
+            if (!context.IsMessage(Messages.Update) || !registeredEvent.FilteringColumns.Any()) return;
 
             var target = context.GetTarget();
             if (target == null) return;
 
-            var missingAttributes = GetMissingAttributes(registeredEvent.FilteringAttributes, target.Attributes, requireAllExpectedAttributes: false);
-            if (!missingAttributes.Any()) return;
+            var missingColumns = GetMissingColumns(registeredEvent.FilteringColumns, target.Attributes, requireAll: false);
+            if (!missingColumns.Any()) return;
 
             context.Trace(
-                $"Registered event expected Update filtering attributes [{FormatList(missingAttributes)}], but Target did not contain any of them. Confirm the step filtering attributes include these logical names if this event should only run for targeted changes.",
+                $"Registered event expected Update filtering columns [{FormatList(missingColumns)}], but Target did not contain any of them. Confirm the step filtering columns include these logical names if this event should only run for targeted changes.",
                 TraceLevel.Info);
         }
 
-        private static void TraceImageAttributeDiagnostics(LocalPluginContext context, string imageLabel, string imageName, IReadOnlyCollection<string> expectedAttributes, EntityImageCollection images)
+        private static void TraceImageColumnDiagnostics(LocalPluginContext context, string imageLabel, string imageName, IReadOnlyCollection<string> expectedColumns, EntityImageCollection images)
         {
-            if (string.IsNullOrWhiteSpace(imageName) || expectedAttributes == null || !expectedAttributes.Any()) return;
+            if (string.IsNullOrWhiteSpace(imageName) || expectedColumns == null || !expectedColumns.Any()) return;
             if (images == null || !images.TryGetValue(imageName, out var image) || image == null) return;
 
-            var missingAttributes = GetMissingAttributes(expectedAttributes, image.Attributes, requireAllExpectedAttributes: true);
-            if (!missingAttributes.Any()) return;
+            var missingColumns = GetMissingColumns(expectedColumns, image.Attributes, requireAll: true);
+            if (!missingColumns.Any()) return;
 
             context.Trace(
-                $"Registered event {imageLabel} '{imageName}' did not contain expected attributes [{FormatList(missingAttributes)}]. They may be missing from the step image configuration, or selected but absent because the Dataverse value is null.",
+                $"Registered event {imageLabel} '{imageName}' did not contain expected columns [{FormatList(missingColumns)}]. They may be missing from the step image configuration, or selected but absent because the Dataverse value is null.",
                 TraceLevel.Verbose);
         }
 
-        private static IReadOnlyCollection<string> GetMissingAttributes(IReadOnlyCollection<string> expectedAttributes, AttributeCollection actualAttributes, bool requireAllExpectedAttributes)
+        private static IReadOnlyCollection<string> GetMissingColumns(IReadOnlyCollection<string> expectedColumns, AttributeCollection actualColumns, bool requireAll)
         {
-            if (expectedAttributes == null || !expectedAttributes.Any()) return Array.Empty<string>();
-            if (actualAttributes == null) return expectedAttributes.ToArray();
+            if (expectedColumns == null || !expectedColumns.Any()) return Array.Empty<string>();
+            if (actualColumns == null) return expectedColumns.ToArray();
 
-            var missingAttributes = expectedAttributes.Where(a => !actualAttributes.ContainsKey(a)).ToArray();
+            var missingColumns = expectedColumns.Where(c => !actualColumns.ContainsKey(c)).ToArray();
 
-            if (requireAllExpectedAttributes) return missingAttributes;
-            return missingAttributes.Length == expectedAttributes.Count ? expectedAttributes.ToArray() : Array.Empty<string>();
+            if (requireAll) return missingColumns;
+            return missingColumns.Length == expectedColumns.Count ? expectedColumns.ToArray() : Array.Empty<string>();
         }
 
         private static string FormatList(IEnumerable<string> values) =>
@@ -159,6 +159,9 @@ namespace Ops.Plugins.Shared
             public PluginLogger Logger { get; }
             public string UnsecureConfig { get; }
             public string SecureConfig { get; }
+
+            public string MessageName => ExecutionContext.MessageName;
+            public string PrimaryEntityName => ExecutionContext.PrimaryEntityName;
 
             private readonly string _pluginName;
 
@@ -227,6 +230,12 @@ namespace Ops.Plugins.Shared
             public T GetInputParameter<T>(string name) =>
                 ExecutionContext.InputParameters.TryGetValue(name, out var v) && v is T t ? t : default;
 
+            public T GetRequiredInputParameter<T>(string name)
+            {
+                if (TryGetInputParameter<T>(name, out var value)) return value;
+                throw new InvalidPluginExecutionException(PluginMessages.MissingInputParameter(name));
+            }
+
             public bool TryGetInputParameter<T>(string name, out T value)
             {
                 if (ExecutionContext.InputParameters.TryGetValue(name, out var v) && v is T t)
@@ -255,12 +264,12 @@ namespace Ops.Plugins.Shared
             // --- IOrganizationService Shortcuts (Defaults to OrganizationService) ---
 
             public Guid Create(Entity entity) => OrganizationService.Create(entity);
-            public Entity Retrieve(string entityName, Guid id, ColumnSet columnSet) => OrganizationService.Retrieve(entityName, id, columnSet);
+            public Entity Retrieve(string tableName, Guid id, ColumnSet columnSet) => OrganizationService.Retrieve(tableName, id, columnSet);
 
-            public T Retrieve<T>(string entityName, Guid id, ColumnSet columnSet) where T : Entity
+            public T Retrieve<T>(string tableName, Guid id, ColumnSet columnSet) where T : Entity
             {
-                var result = OrganizationService.Retrieve(entityName, id, columnSet).ToEntity<T>();
-                Logger.Trace(TraceLevel.Verbose, () => $"Retrieved {entityName}({id:D})");
+                var result = OrganizationService.Retrieve(tableName, id, columnSet).ToEntity<T>();
+                Logger.Trace(TraceLevel.Verbose, () => $"Retrieved {tableName}({id:D})");
                 return result;
             }
             public T Retrieve<T>(Guid id, ColumnSet columnSet) where T : Entity => Retrieve<T>(
@@ -268,12 +277,12 @@ namespace Ops.Plugins.Shared
                     ?? throw new InvalidOperationException($"{typeof(T).Name} does not have EntityLogicalNameAttribute."),
                 id, columnSet);
             public void Update(Entity entity) => OrganizationService.Update(entity);
-            public void Delete(string entityName, Guid id) => OrganizationService.Delete(entityName, id);
+            public void Delete(string tableName, Guid id) => OrganizationService.Delete(tableName, id);
             public OrganizationResponse Execute(OrganizationRequest request) => OrganizationService.Execute(request);
             public EntityCollection RetrieveMultiple(QueryBase query) => OrganizationService.RetrieveMultiple(query);
             public IEnumerable<T> RetrieveMultiple<T>(QueryBase query) where T : Entity => OrganizationService.RetrieveMultiple(query).Entities.Select(e => e.ToEntity<T>());
-            public void Associate(string entityName, Guid entityId, Relationship relationship, EntityReferenceCollection relatedEntities) => OrganizationService.Associate(entityName, entityId, relationship, relatedEntities);
-            public void Disassociate(string entityName, Guid entityId, Relationship relationship, EntityReferenceCollection relatedEntities) => OrganizationService.Disassociate(entityName, entityId, relationship, relatedEntities);
+            public void Associate(string tableName, Guid entityId, Relationship relationship, EntityReferenceCollection relatedEntities) => OrganizationService.Associate(tableName, entityId, relationship, relatedEntities);
+            public void Disassociate(string tableName, Guid entityId, Relationship relationship, EntityReferenceCollection relatedEntities) => OrganizationService.Disassociate(tableName, entityId, relationship, relatedEntities);
 
             // --- Stage / message guards ---
 

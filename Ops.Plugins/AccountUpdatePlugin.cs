@@ -18,9 +18,9 @@ namespace Ops.Plugins
 
         protected override IEnumerable<RegisteredEvent> GetRegisteredEvents()
         {
-            var identityAttributes = new[] { AccountFields.AccountNumber };
+            var identityColumns = new[] { AccountFields.AccountNumber };
 
-            var profileAttributes = new[] { AccountFields.Name, AccountFields.Telephone1 };
+            var profileColumns = new[] { AccountFields.Name, AccountFields.Telephone1 };
 
             return new[]
             {
@@ -31,8 +31,8 @@ namespace Ops.Plugins
                     Account.EntityLogicalName,
                     AccountPreOpUpdateSync,
                     requiredPreImageName: PluginImageNames.PreImage,
-                    filteringAttributes: identityAttributes,
-                    preImageAttributes: identityAttributes,
+                    filteringColumns: identityColumns,
+                    preImageColumns: identityColumns,
                     runInUserContext: RunInUserContext.CallingUser,
                     stepDescription: "Protects assigned account numbers before update."),
 
@@ -43,8 +43,8 @@ namespace Ops.Plugins
                     Account.EntityLogicalName,
                     AccountPostOpUpdateSync,
                     requiredPostImageName: PluginImageNames.PostImage,
-                    filteringAttributes: profileAttributes,
-                    postImageAttributes: profileAttributes,
+                    filteringColumns: profileColumns,
+                    postImageColumns: profileColumns,
                     runInUserContext: RunInUserContext.CallingUser,
                     stepDescription: "Summarizes committed account profile updates.")
             };

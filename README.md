@@ -92,7 +92,7 @@ Yes, step registration can be automated for assemblies that are already in Datav
 3. For each plugin class, compare the code-declared `RegisteredEvent` metadata with existing `sdkmessageprocessingstep` rows.
 4. Dry-run by default, then use `--apply` to create missing steps/images and update safe drift fields.
 
-`RegisteredEvent` includes deployment metadata for this: message, entity, stage, mode, rank, filtering attributes, required image names, and image attributes. The starter plugin uses that metadata for `AccountUpdatePlugin`.
+`RegisteredEvent` includes deployment metadata for this: message, table, stage, mode, rank, filtering columns, required image names, and image columns. The starter plugin uses that metadata for `AccountUpdatePlugin`.
 
 Before applying, the sync tool validates declared entity logical names against the
 target environment, creates steps before images, and treats disabled matching steps

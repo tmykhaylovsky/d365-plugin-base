@@ -5,7 +5,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 ## Authoring plugins
 
 - Keep plugin classes stateless. Dataverse can cache and reuse `IPlugin` instances, so do not store services, execution context, target records, or other invocation data in instance fields.
-- Declare the expected runtime and deployment shape in `GetRegisteredEvents()`: message, primary entity, pipeline stage, execution mode, handler, filtering attributes, required image aliases, and image attributes.
+- Declare the expected runtime and deployment shape in `GetRegisteredEvents()`: message, primary table, pipeline stage, execution mode, handler, filtering columns, required image aliases, and image columns.
 - Include optional deployment metadata there when it matters: step description, execution order, and Run in User's Context. Prefer `RunInUserContext.CallingUser`; when a fixed user is needed, reference a shared run-as label and resolve it during registration sync.
 - Multiple `RegisteredEvent` entries in one plugin are fine when they represent related behavior at distinct message/entity/stage/mode combinations. Do not duplicate the same event shape just to call multiple handlers.
 - Document fixed Run in User's Context labels near the registration workflow, not as raw GUIDs in plugin code.
@@ -18,12 +18,12 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 ## Registration shape
 
-- Register `Update` steps with filtering attributes whenever possible. Do not include the primary key as a filtering attribute.
+- Register `Update` steps with filtering columns whenever possible. Do not include the primary key as a filtering column.
 - Register only the image aliases and image columns the handler actually needs. Prefer images over retrieves when comparing before and after values.
-- Keep `RegisteredEvent` filtering and image attribute metadata aligned with the real step registration so tests and deployment automation have one source of intent.
+- Keep `RegisteredEvent` filtering and image column metadata aligned with the real step registration so tests and deployment automation have one source of intent.
 - Store fixed Run in User's Context values as labels in code and `systemuserid` GUIDs in local config, not as display names. Display names are mutable and can collide.
-- Treat missing filtering attributes and missing image columns as deployment-time validation concerns. Runtime plugin code can trace likely registration issues, but it cannot directly read the Dataverse step registration.
-- Use runtime registration diagnostics as hints: a fired `Update` Target with none of the expected filtering attributes suggests an over-broad step, while an image missing an expected attribute may mean either image misconfiguration or a selected column whose value is null.
+- Treat missing filtering columns and missing image columns as deployment-time validation concerns. Runtime plugin code can trace likely registration issues, but it cannot directly read the Dataverse step registration.
+- Use runtime registration diagnostics as hints: a fired `Update` Target with none of the expected filtering columns suggests an over-broad step, while an image missing an expected column may mean either image misconfiguration or a selected column whose value is null.
 - Choose stage intentionally:
   - Use `PreValidation` for checks that can cancel before the main transaction when security and transaction semantics fit.
   - Use `PreOperation` to modify fields on the target entity before Dataverse writes it.
@@ -48,6 +48,33 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 - Use targeted recursion guards or shared variables when a plugin can trigger the same pipeline again.
 - Shared variable values must be serializable. For later stages reading values set in `PreValidation`, check `ParentContext.SharedVariables` as well.
 - Keep `UnsecureConfig` for non-sensitive behavior flags. Keep secrets out of plugin step configuration unless the platform secure config storage is explicitly appropriate.
+
+## LocalPluginContext API
+
+`LocalPluginContext` exposes shorthand properties and helpers — prefer these over accessing `ExecutionContext` directly in plugin code.
+
+| Member | Purpose |
+|--------|---------|
+| `context.MessageName` | Shorthand for `ExecutionContext.MessageName` |
+| `context.PrimaryEntityName` | Shorthand for `ExecutionContext.PrimaryEntityName` |
+| `context.IsMessage(name)` | Case-insensitive message name guard |
+| `context.IsPrimaryEntity(name)` | Case-insensitive primary table guard |
+| `context.GetTarget()` | Returns the `Target` input parameter as `Entity`, or null |
+| `context.GetPreImage<T>()` / `GetPostImage<T>()` | Returns typed pre/post image, or null |
+| `context.GetInputParameter<T>(name)` | Returns input parameter or `default` if absent |
+| `context.GetRequiredInputParameter<T>(name)` | Returns input parameter; throws `InvalidPluginExecutionException` if absent |
+| `context.Trace(msg, level)` | Routes to `PluginLogger`; omit level to use `GlobalLevel` |
+| `context.TraceTarget()` | Verbose dump of the target entity columns |
+| `context.TraceColumnChange(pre, post, col, changed)` | Traces before/after column value |
+
+**`PluginMessages`** (in `PluginExtensions.cs`) provides standard error string templates:
+
+```csharp
+PluginMessages.MissingInputParameter(name)          // parameter not found in InputParameters
+PluginMessages.MissingTableColumn(tableName, columnName)  // column not found in table
+```
+
+`RegisteredEvent` constructor uses `filteringColumns`, `preImageColumns`, and `postImageColumns` (not `…Attributes`). The same naming applies to the read properties.
 
 ## Logging and diagnostics
 
@@ -84,7 +111,7 @@ This solution is a starter for signed Dataverse plugin assemblies. These practic
 
 - Build and test sequentially on Windows to avoid file locks in `obj` and `bin`.
 - Keep the signing-key decision explicit. The committed `.snk` is convenient for starter/dev/test assembly identity, but production environments may require an organization-controlled private key.
-- `pac plugin push` updates the assembly binary. Step registration details such as stage, mode, filtering attributes, and images remain managed separately unless you automate that process.
+- `pac plugin push` updates the assembly binary. Step registration details such as stage, mode, filtering columns, and images remain managed separately unless you automate that process.
 - PAC auth profiles are local convenience state, not durable configuration. If profile tokens expire or the token cache cannot be read, recreate auth with `pac auth create --deviceCode` and reselect the profile before running modelbuilder or plugin push.
 - Step registration automation should be additive by default: create missing `sdkmessageprocessingstep` and image rows for the assembly being deployed, but do not rewrite existing steps unless an explicit update mode is requested.
 - A lightweight registration sync tool should run in dry-run mode by default, show creates/updates/deletes before applying, and support explicit `-Apply` behavior for correcting filtering attributes and image definitions after `pac plugin push`.

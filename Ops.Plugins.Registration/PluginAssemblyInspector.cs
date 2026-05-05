@@ -101,8 +101,8 @@ namespace Ops.Plugins.Registration
             var description = descriptionProperty == null ? null : descriptionProperty.GetValue(registeredEvent, null)?.ToString();
 
             var images = new List<DesiredImage>();
-            AddImage(images, pluginTypeName, messageName, entityLogicalName, stage, mode, registeredEvent, "RequiredPreImageName", "PreImageAttributes", PreImage);
-            AddImage(images, pluginTypeName, messageName, entityLogicalName, stage, mode, registeredEvent, "RequiredPostImageName", "PostImageAttributes", PostImage);
+            AddImage(images, pluginTypeName, messageName, entityLogicalName, stage, mode, registeredEvent, "RequiredPreImageName", "PreImageColumns", PreImage);
+            AddImage(images, pluginTypeName, messageName, entityLogicalName, stage, mode, registeredEvent, "RequiredPostImageName", "PostImageColumns", PostImage);
 
             return new DesiredStep
             {
@@ -112,14 +112,14 @@ namespace Ops.Plugins.Registration
                 Stage = stage,
                 Mode = mode,
                 Rank = rank,
-                FilteringAttributes = AttributeList.From(GetValues(registeredEvent, "FilteringAttributes")),
+                FilteringAttributes = AttributeList.From(GetValues(registeredEvent, "FilteringColumns")),
                 Images = images,
                 RunInUserContext = runInUserContext,
                 Description = description
             };
         }
 
-        private static void AddImage(List<DesiredImage> images, string pluginTypeName, string messageName, string entityLogicalName, int stage, int mode, object registeredEvent, string aliasProperty, string attributesProperty, int imageType)
+        private static void AddImage(List<DesiredImage> images, string pluginTypeName, string messageName, string entityLogicalName, int stage, int mode, object registeredEvent, string aliasProperty, string columnsProperty, int imageType)
         {
             var alias = GetValue<string>(registeredEvent, aliasProperty);
             if (string.IsNullOrWhiteSpace(alias)) return;
@@ -134,7 +134,7 @@ namespace Ops.Plugins.Registration
                 Alias = alias,
                 ImageType = imageType,
                 MessagePropertyName = SdkMessagePropertyNames.Target,
-                Attributes = AttributeList.From(GetValues(registeredEvent, attributesProperty))
+                Attributes = AttributeList.From(GetValues(registeredEvent, columnsProperty))
             });
         }
 

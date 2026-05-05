@@ -17,9 +17,9 @@ namespace Ops.Plugins.Shared
             Action<PluginBase.LocalPluginContext> execute = null,
             string requiredPreImageName = null,
             string requiredPostImageName = null,
-            IEnumerable<string> filteringAttributes = null,
-            IEnumerable<string> preImageAttributes = null,
-            IEnumerable<string> postImageAttributes = null,
+            IEnumerable<string> filteringColumns = null,
+            IEnumerable<string> preImageColumns = null,
+            IEnumerable<string> postImageColumns = null,
             int rank = 1,
             string runInUserContext = CallingUser,
             string stepDescription = null)
@@ -31,9 +31,9 @@ namespace Ops.Plugins.Shared
             Execute = execute;
             RequiredPreImageName = requiredPreImageName;
             RequiredPostImageName = requiredPostImageName;
-            FilteringAttributes = NormalizeAttributes(filteringAttributes);
-            PreImageAttributes = NormalizeAttributes(preImageAttributes);
-            PostImageAttributes = NormalizeAttributes(postImageAttributes);
+            FilteringColumns = NormalizeColumns(filteringColumns);
+            PreImageColumns = NormalizeColumns(preImageColumns);
+            PostImageColumns = NormalizeColumns(postImageColumns);
             Rank = rank;
             RunInUserContext = string.IsNullOrWhiteSpace(runInUserContext) ? CallingUser : runInUserContext.Trim();
             StepDescription = string.IsNullOrWhiteSpace(stepDescription) ? null : stepDescription.Trim();
@@ -46,9 +46,9 @@ namespace Ops.Plugins.Shared
         public Action<PluginBase.LocalPluginContext> Execute { get; }
         public string RequiredPreImageName { get; }
         public string RequiredPostImageName { get; }
-        public IReadOnlyCollection<string> FilteringAttributes { get; }
-        public IReadOnlyCollection<string> PreImageAttributes { get; }
-        public IReadOnlyCollection<string> PostImageAttributes { get; }
+        public IReadOnlyCollection<string> FilteringColumns { get; }
+        public IReadOnlyCollection<string> PreImageColumns { get; }
+        public IReadOnlyCollection<string> PostImageColumns { get; }
         public int Rank { get; }
         public string RunInUserContext { get; }
         public string StepDescription { get; }
@@ -75,13 +75,13 @@ namespace Ops.Plugins.Shared
                 || context?.PostEntityImages?.ContainsKey(RequiredPostImageName) == true;
         }
 
-        private static IReadOnlyCollection<string> NormalizeAttributes(IEnumerable<string> attributes)
+        private static IReadOnlyCollection<string> NormalizeColumns(IEnumerable<string> columns)
         {
-            if (attributes == null) return Array.Empty<string>();
+            if (columns == null) return Array.Empty<string>();
 
-            return attributes
-                .Where(a => !string.IsNullOrWhiteSpace(a))
-                .Select(a => a.Trim())
+            return columns
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
         }
