@@ -17,6 +17,11 @@ namespace Ops.Plugins.Shared
     // -------------------------------------------------------------------------
     public static class EntityExtensions
     {
+        // True if the entity is null, or has no Id and no attributes.
+        // A Create target has Guid.Empty but carries attributes — this returns false for that case.
+        public static bool IsNullOrEmpty(this Entity entity) =>
+            entity == null || (entity.Id == Guid.Empty && entity.Attributes.Count == 0);
+
         // Overload with explicit default — returns defaultValue when the attribute is absent or null.
         // The SDK's built-in GetAttributeValue<T>(string) returns default(T) and cannot distinguish
         // "absent" from "zero" for value types. Use this overload when that distinction matters.
@@ -99,6 +104,10 @@ namespace Ops.Plugins.Shared
     // -------------------------------------------------------------------------
     public static class EntityReferenceExtensions
     {
+        // True if the reference is null or its Id is Guid.Empty
+        public static bool IsNullOrEmpty(this EntityReference reference) =>
+            reference == null || reference.Id == Guid.Empty;
+
         // True if both references point to the same logical name and Id
         public static bool Matches(this EntityReference reference, EntityReference other) =>
             reference != null && other != null &&

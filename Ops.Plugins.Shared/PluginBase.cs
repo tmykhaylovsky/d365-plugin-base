@@ -256,7 +256,13 @@ namespace Ops.Plugins.Shared
 
             public Guid Create(Entity entity) => OrganizationService.Create(entity);
             public Entity Retrieve(string entityName, Guid id, ColumnSet columnSet) => OrganizationService.Retrieve(entityName, id, columnSet);
-            public T Retrieve<T>(string entityName, Guid id, ColumnSet columnSet) where T : Entity => OrganizationService.Retrieve(entityName, id, columnSet).ToEntity<T>();
+
+            public T Retrieve<T>(string entityName, Guid id, ColumnSet columnSet) where T : Entity
+            {
+                var result = OrganizationService.Retrieve(entityName, id, columnSet).ToEntity<T>();
+                Logger.Trace(TraceLevel.Verbose, () => $"Retrieved {entityName}({id:D})");
+                return result;
+            }
             public T Retrieve<T>(Guid id, ColumnSet columnSet) where T : Entity => Retrieve<T>(
                 typeof(T).GetCustomAttribute<Microsoft.Xrm.Sdk.Client.EntityLogicalNameAttribute>()?.LogicalName
                     ?? throw new InvalidOperationException($"{typeof(T).Name} does not have EntityLogicalNameAttribute."),
@@ -273,6 +279,9 @@ namespace Ops.Plugins.Shared
 
             public bool IsMessage(string messageName) =>
                 string.Equals(ExecutionContext.MessageName, messageName, StringComparison.OrdinalIgnoreCase);
+
+            public bool IsPrimaryEntity(string entityName) =>
+                string.Equals(ExecutionContext.PrimaryEntityName, entityName, StringComparison.OrdinalIgnoreCase);
 
             public bool IsStage(PluginStage stage) => ExecutionContext.Stage == (int)stage;
 
