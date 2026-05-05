@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 
@@ -256,6 +257,10 @@ namespace Ops.Plugins.Shared
             public Guid Create(Entity entity) => OrganizationService.Create(entity);
             public Entity Retrieve(string entityName, Guid id, ColumnSet columnSet) => OrganizationService.Retrieve(entityName, id, columnSet);
             public T Retrieve<T>(string entityName, Guid id, ColumnSet columnSet) where T : Entity => OrganizationService.Retrieve(entityName, id, columnSet).ToEntity<T>();
+            public T Retrieve<T>(Guid id, ColumnSet columnSet) where T : Entity => Retrieve<T>(
+                typeof(T).GetCustomAttribute<Microsoft.Xrm.Sdk.Client.EntityLogicalNameAttribute>()?.LogicalName
+                    ?? throw new InvalidOperationException($"{typeof(T).Name} does not have EntityLogicalNameAttribute."),
+                id, columnSet);
             public void Update(Entity entity) => OrganizationService.Update(entity);
             public void Delete(string entityName, Guid id) => OrganizationService.Delete(entityName, id);
             public OrganizationResponse Execute(OrganizationRequest request) => OrganizationService.Execute(request);
@@ -263,7 +268,6 @@ namespace Ops.Plugins.Shared
             public IEnumerable<T> RetrieveMultiple<T>(QueryBase query) where T : Entity => OrganizationService.RetrieveMultiple(query).Entities.Select(e => e.ToEntity<T>());
             public void Associate(string entityName, Guid entityId, Relationship relationship, EntityReferenceCollection relatedEntities) => OrganizationService.Associate(entityName, entityId, relationship, relatedEntities);
             public void Disassociate(string entityName, Guid entityId, Relationship relationship, EntityReferenceCollection relatedEntities) => OrganizationService.Disassociate(entityName, entityId, relationship, relatedEntities);
-
 
             // --- Stage / message guards ---
 
